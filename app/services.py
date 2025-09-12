@@ -35,7 +35,6 @@ async def collect_quotes_background():
     try:
         await QuoteService.fetch_and_save_quotes()
         logger.info(f"Background collection completed at {datetime.now(timezone.utc)}")
-        print(f"Background collection completed at {datetime.now(timezone.utc)}")
 
     except Exception as e:
         logger.error(f"Background collection failed: {e}")

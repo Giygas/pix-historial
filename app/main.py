@@ -43,7 +43,6 @@ async def lifespan_with_scheduler(app: FastAPI):
             f"Started scheduler - next run in {settings.COLLECTION_INTERVAL} seconds"
         )
 
-        print(f"Started scheduler - next run in {settings.COLLECTION_INTERVAL} seconds")
         yield
 
     except Exception as e:
