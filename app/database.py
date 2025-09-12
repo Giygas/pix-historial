@@ -1,3 +1,4 @@
+import time
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
@@ -91,6 +92,12 @@ class QuoteTracker:
                 )
 
         return history
+
+    def get_mongo_ping_time(self) -> float:
+        start = time.perf_counter()
+        self.db.command("ping")
+        end = time.perf_counter()
+        return round((end - start) * 1000, 2)  # milliseconds
 
 
 tracker = QuoteTracker()

@@ -61,3 +61,5 @@ class HealthCheckResponse(BaseModel):
     database: str
     last_update: Optional[datetime]
     timestamp: datetime
+    uptime: str
+    mongo_ping: str

@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -12,6 +12,10 @@ from app.models import AppHistoryResponse, HealthCheckResponse, SnapshotResponse
 from app.services import QuoteService, collect_quotes_background
 
 scheduler = AsyncIOScheduler()
+
+
+# Start time
+app_start_time = datetime.now(timezone.utc)
 
 
 @asynccontextmanager
@@ -131,9 +135,15 @@ async def health_check():
         db_status = f"error: {str(e)}"
         last_update = None
 
+    now = datetime.now(timezone.utc)
+    uptime_seconds = (now - app_start_time).total_seconds()
+    uptime = timedelta(seconds=uptime_seconds)
+
     return {
         "status": "healthy" if db_status == "connected" else "unhealthy",
         "database": db_status,
         "last_update": last_update,
         "timestamp": datetime.now(),
+        "uptime": str(uptime),
+        "mongo_ping": str(tracker.get_mongo_ping_time()) + " ms",
     }
