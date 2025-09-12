@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from pymongo import ASCENDING, DESCENDING, MongoClient
@@ -16,10 +16,6 @@ class QuoteTracker:
         self.collection: Collection = self.db.snapshots
 
         self.createIndexes()
-
-    def saveData(self):
-        result = self.collection.insert_one({"one": "row"})
-        return str(result.inserted_id)
 
     def createIndexes(self):
         """Create indexes for faster query time"""
@@ -54,7 +50,47 @@ class QuoteTracker:
         # Create and save validated snapshot
         snapshot = QuoteSnapshot(quotes=quotes)
         result = self.collection.insert_one(snapshot.model_dump())
+
         return str(result.inserted_id)
+
+    async def get_latest_snapshot(self) -> Optional[QuoteSnapshot]:
+        """Get the most recent snapshot"""
+        doc = self.collection.find_one(sort=[("timestamp", DESCENDING)])
+        if doc:
+            doc.pop("_id", None)
+            return QuoteSnapshot(**doc)
+        return None
+
+    async def get_snapshots_since(
+        self, since: datetime, limit: int = 100
+    ) -> List[QuoteSnapshot]:
+        """Get validated snapshots since a given time"""
+        docs = list(
+            self.collection.find(
+                {"timestamp": {"$gte": since}},
+                sort=[("timestamp", DESCENDING)],
+                limit=limit,
+            )
+        )
+
+        return [
+            QuoteSnapshot(**{k: v for k, v in doc.items() if k != "_id"})
+            for doc in docs
+        ]
+
+    async def get_app_history(self, app_name: str, hours: int) -> List[dict]:
+        """Get rate history for a specific app"""
+        since = datetime.now(timezone.utc) - timedelta(hours=hours)
+        snapshots = await self.get_snapshots_since(since)
+
+        history = []
+        for snapshot in snapshots:
+            if app_name in snapshot.quotes:
+                history.append(
+                    {"timestamp": snapshot.timestamp, "rate": snapshot.quotes[app_name]}
+                )
+
+        return history
 
 
 tracker = QuoteTracker()

@@ -7,6 +7,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import FastAPI, HTTPException
 
 from app.config import settings
+from app.database import tracker
 from app.logger import logger
 from app.services import QuoteService, collect_quotes_background
 
@@ -64,8 +65,15 @@ app = FastAPI(
 
 
 @app.get("/")
-def root():
-    return requestData()
+async def root():
+    res = await tracker.get_latest_snapshot()
+    return res
+
+
+@app.get("/apps/{app_name}")
+async def app_history(app_name):
+    res = await tracker.get_app_history(app_name, 24)
+    return res
 
 
 @app.get("/snapshot")
@@ -79,8 +87,3 @@ async def save_snapshot():
     except Exception as e:
         logger.error(f"Manual collection failed: {e}")
         raise HTTPException(status_code=500, detail=f"Collection failed: {str(e)}")
-
-
-def requestData():
-    response = requests.get("https://pix.ferminrp.com/quotes")
-    return response.json()
