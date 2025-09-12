@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -45,7 +45,19 @@ class SnapshotResponse(BaseModel):
     total_apps: int
 
 
+class HistoryElement(BaseModel):
+    timestamp: str
+    rate: float
+
+
 class AppHistoryResponse(BaseModel):
     app_name: str
-    history: List[Dict[str, Any]]
+    history: List[HistoryElement]
     total_records: int
+
+
+class HealthCheckResponse(BaseModel):
+    status: Literal["healthy", "unhealthy"]
+    database: str
+    last_update: Optional[datetime]
+    timestamp: datetime

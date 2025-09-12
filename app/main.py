@@ -1,8 +1,6 @@
-import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-import requests
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import FastAPI, HTTPException
@@ -10,7 +8,7 @@ from fastapi import FastAPI, HTTPException
 from app.config import settings
 from app.database import tracker
 from app.logger import logger
-from app.models import AppHistoryResponse
+from app.models import AppHistoryResponse, HealthCheckResponse
 from app.services import QuoteService, collect_quotes_background
 
 scheduler = AsyncIOScheduler()
@@ -60,7 +58,7 @@ async def lifespan_with_scheduler(app: FastAPI):
 app = FastAPI(
     title=settings.API_TITLE,
     root_path="/pix-historial",
-    description="Track and analyze BRLARS exchange rates across multiple apps",
+    description="Realice un seguimiento y analice los tipos de cambio de BRLARS en múltiples aplicaciones",
     version=settings.API_VERSION,
     lifespan=lifespan_with_scheduler,
 )
@@ -76,7 +74,7 @@ async def root():
     }
 
 
-@app.get("/apps/{app_name}")
+@app.get("/apps/{app_name}", response_model=AppHistoryResponse)
 async def app_history(app_name):
     """Get rate history for a specific app"""
     history = await tracker.get_app_history(app_name, 24)
@@ -104,7 +102,7 @@ async def save_snapshot():
         raise HTTPException(status_code=500, detail=f"Collection failed: {str(e)}")
 
 
-@app.get("/health")
+@app.get("/health", response_model=HealthCheckResponse)
 async def health_check():
     """Health check endpoint"""
     try:

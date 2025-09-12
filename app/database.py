@@ -6,7 +6,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 
 from .config import settings
-from .models import ApiResponse, Exchange, QuoteSnapshot
+from .models import ApiResponse, Exchange, HistoryElement, QuoteSnapshot
 
 
 class QuoteTracker:
@@ -78,7 +78,7 @@ class QuoteTracker:
             for doc in docs
         ]
 
-    async def get_app_history(self, app_name: str, hours: int) -> List[dict]:
+    async def get_app_history(self, app_name: str, hours: int) -> List[HistoryElement]:
         """Get rate history for a specific app"""
         since = datetime.now(timezone.utc) - timedelta(hours=hours)
         snapshots = await self.get_snapshots_since(since)
