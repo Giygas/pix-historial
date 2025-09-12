@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException
 from app.config import settings
 from app.database import tracker
 from app.logger import logger
-from app.models import AppHistoryResponse, HealthCheckResponse
+from app.models import AppHistoryResponse, HealthCheckResponse, SnapshotResponse
 from app.services import QuoteService, collect_quotes_background
 
 scheduler = AsyncIOScheduler()
@@ -72,6 +72,22 @@ async def root():
         "status": "running",
         "version": settings.API_VERSION,
     }
+
+
+@app.get("/latest", response_model=SnapshotResponse)
+async def get_latest():
+    """Get the most recent quote snapshot"""
+    latest = await tracker.get_latest_snapshot()
+
+    if not latest:
+        raise HTTPException(status_code=404, detail="No snapshots found")
+
+    return SnapshotResponse(
+        id="latest",
+        timestamp=latest.timestamp,
+        quotes=latest.quotes,
+        total_apps=len(latest.quotes),
+    )
 
 
 @app.get("/apps/{app_name}", response_model=AppHistoryResponse)
