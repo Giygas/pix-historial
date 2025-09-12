@@ -9,6 +9,7 @@ from fastapi import FastAPI, HTTPException
 from app.config import settings
 from app.database import tracker
 from app.logger import logger
+from app.models import AppHistoryResponse
 from app.services import QuoteService, collect_quotes_background
 
 scheduler = AsyncIOScheduler()
@@ -65,14 +66,27 @@ app = FastAPI(
 
 @app.get("/")
 async def root():
-    res = await tracker.get_latest_snapshot()
-    return res
+    """Root endpoint"""
+    return {
+        "message": settings.API_TITLE,
+        "status": "running",
+        "version": settings.API_VERSION,
+    }
 
 
 @app.get("/apps/{app_name}")
 async def app_history(app_name):
-    res = await tracker.get_app_history(app_name, 24)
-    return res
+    """Get rate history for a specific app"""
+    history = await tracker.get_app_history(app_name, 24)
+
+    if not history:
+        raise HTTPException(
+            status_code=404, detail=f"No history found for app '{app_name}'"
+        )
+
+    return AppHistoryResponse(
+        app_name=app_name, history=history, total_records=len(history)
+    )
 
 
 @app.get("/snapshot")

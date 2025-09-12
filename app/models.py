@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -43,3 +43,9 @@ class SnapshotResponse(BaseModel):
     timestamp: datetime
     quotes: Dict[str, float]
     total_apps: int
+
+
+class AppHistoryResponse(BaseModel):
+    app_name: str
+    history: List[Dict[str, Any]]
+    total_records: int
