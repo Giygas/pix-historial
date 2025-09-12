@@ -1,5 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 import requests
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -100,3 +101,24 @@ async def save_snapshot():
     except Exception as e:
         logger.error(f"Manual collection failed: {e}")
         raise HTTPException(status_code=500, detail=f"Collection failed: {str(e)}")
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    try:
+        latest = await tracker.get_latest_snapshot()
+        db_status = "connected"
+        last_update = latest.timestamp.astimezone(timezone.utc) if latest else None
+
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        db_status = f"error: {str(e)}"
+        last_update = None
+
+    return {
+        "status": "healthy" if db_status == "connected" else "unhealthy",
+        "database": db_status,
+        "last_update": last_update,
+        "timestamp": datetime.now(),
+    }
