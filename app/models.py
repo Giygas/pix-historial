@@ -46,7 +46,7 @@ class SnapshotResponse(BaseModel):
 
 
 class HistoryElement(BaseModel):
-    timestamp: str
+    timestamp: datetime
     rate: float
 
 

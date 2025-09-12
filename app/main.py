@@ -91,9 +91,9 @@ async def get_latest():
 
 
 @app.get("/apps/{app_name}", response_model=AppHistoryResponse)
-async def app_history(app_name):
+async def app_history(app_name, hours: int = 24):
     """Get rate history for a specific app"""
-    history = await tracker.get_app_history(app_name, 24)
+    history = await tracker.get_app_history(app_name, hours)
 
     if not history:
         raise HTTPException(
