@@ -1,15 +1,66 @@
-from fastapi import FastAPI
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
-import time
+import logging
+from contextlib import asynccontextmanager
 
 import requests
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from fastapi import FastAPI, HTTPException
 
-app = FastAPI()
-scheduler = BackgroundScheduler()
+from app.config import settings
+from app.logger import logger
+from app.services import QuoteService, collect_quotes_background
+
+scheduler = AsyncIOScheduler()
 
 
-from .database import tracker
+@asynccontextmanager
+async def lifespan_with_scheduler(app: FastAPI):
+    """Scheduler setup"""
+    try:
+        # Configure scheduler with better defaults
+        scheduler.configure(
+            jobstores={"default": {"type": "memory"}},
+            executors={"default": {"type": "asyncio"}},
+            job_defaults={
+                "coalesce": True,  # Combine missed jobs
+                "max_instances": 1,  # Only one instance at a time
+                "misfire_grace_time": 60,  # Grace period for missed jobs
+            },
+        )
+
+        # Add the job
+        scheduler.add_job(
+            collect_quotes_background,
+            trigger=IntervalTrigger(seconds=settings.COLLECTION_INTERVAL),
+            id="quote_collection",
+            name="Periodic Quote Collection",
+            replace_existing=True,
+        )
+
+        scheduler.start()
+        logger.info(
+            f"Started scheduler - next run in {settings.COLLECTION_INTERVAL} seconds"
+        )
+
+        print(f"Started scheduler - next run in {settings.COLLECTION_INTERVAL} seconds")
+        yield
+
+    except Exception as e:
+        logger.error(f"Error with scheduler: {e}")
+        raise
+    finally:
+        # Ensure scheduler shuts down cleanly
+        if scheduler.running:
+            scheduler.shutdown(wait=True)
+        logger.info("Scheduler shutdown complete")
+
+
+app = FastAPI(
+    title=settings.API_TITLE,
+    description="Track and analyze BRLARS exchange rates across multiple apps",
+    version=settings.API_VERSION,
+    lifespan=lifespan_with_scheduler,
+)
 
 
 @app.get("/")
@@ -17,24 +68,19 @@ def root():
     return requestData()
 
 
-@app.get("/{appName}")
-def getAppData(appName: str) -> str:
-    # TODO: logic for getting the historic data for this app
-    # use HTTPexception for managing invalid data
-    print("this thing is ", {appName})
-    savedId = tracker.saveData()
-    print("data saved: ", savedId)
-    return appName
+@app.get("/snapshot")
+async def save_snapshot():
+    """Manually trigger quote collection"""
+    try:
+        doc_id = await QuoteService.fetch_and_save_quotes()
 
+        return f"Snapshot saved with the id: {doc_id}"
 
-def print_time():
-    print(f"The current time is {time.ctime()}")
+    except Exception as e:
+        logger.error(f"Manual collection failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Collection failed: {str(e)}")
 
 
 def requestData():
     response = requests.get("https://pix.ferminrp.com/quotes")
     return response.json()
-
-
-# scheduler.add_job(print_time, CronTrigger(minute="*/1"))  # Every minute
-# scheduler.start()

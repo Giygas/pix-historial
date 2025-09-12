@@ -1,6 +1,7 @@
-from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, RootModel
 from datetime import datetime, timezone
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, Field, RootModel
 
 
 # API Response Models
@@ -20,11 +21,11 @@ class Exchange(BaseModel):
     hasFees: Optional[bool] = None
 
 
-class ApiResponse(BaseModel):
-    RootModel: Dict[str, Exchange]
+class ApiResponse(RootModel[Dict[str, Exchange]]):
+    root: Dict[str, Exchange]
 
     def items(self):
-        return self.items()
+        return self.root.items()
 
 
 # Database Models
@@ -34,3 +35,11 @@ class QuoteSnapshot(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+
+# API Response Models
+class SnapshotResponse(BaseModel):
+    id: str
+    timestamp: datetime
+    quotes: Dict[str, float]
+    total_apps: int

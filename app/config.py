@@ -1,24 +1,17 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings
-from typing import Optional
 
 
 class Settings(BaseSettings):
-    # Database
     MONGO_URI: str = "mongodb://localhost:27017"
-    DB_NAME: str = "quotes"
-
-    # External API
-    QUOTES_API_URL: str = "https://your-api-endpoint.com/quotes"
-
-    # Collection settings
-    COLLECTION_INTERVAL: int = 300  # 5 minutes in seconds
-
-    # API settings
-    API_TITLE: str = "Pix price tracker"
-    API_VERSION: str = "1.0.0"
+    DB_NAME: str = Field(...)
+    QUOTES_API_URL: str = Field(...)
+    COLLECTION_INTERVAL: int = 60
+    API_TITLE: str = Field(...)
+    API_VERSION: str = Field(...)
 
     class Config:
         env_file = ".env"
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]
