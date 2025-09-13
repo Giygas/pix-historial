@@ -62,7 +62,8 @@ async def lifespan_with_scheduler(app: FastAPI):
 app = FastAPI(
     title=settings.API_TITLE,
     root_path="/pix-historial",
-    description="Realice un seguimiento y analice los tipos de cambio de BRLARS en múltiples aplicaciones",
+    description="Realice un seguimiento y analice los tipos \
+    de cambio de BRLARS en múltiples aplicaciones",
     version=settings.API_VERSION,
     lifespan=lifespan_with_scheduler,
 )
