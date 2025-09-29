@@ -10,7 +10,9 @@ from app.config import settings
 from app.database import tracker
 from app.logger import logger
 from app.models import AppHistoryResponse, HealthCheckResponse, SnapshotResponse
-from app.services import QuoteService, collect_quotes_background
+from app.services import collect_quotes_background
+
+# from app.services import QuoteService, collect_quotes_background
 
 scheduler = AsyncIOScheduler()
 
@@ -67,6 +69,8 @@ app = FastAPI(
     de cambio de BRLARS en múltiples aplicaciones",
     version=settings.API_VERSION,
     lifespan=lifespan_with_scheduler,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 
@@ -111,20 +115,20 @@ async def app_history(app_name, hours: int = 24):
     )
 
 
-@app.get("/snapshot")
-async def save_snapshot():
-    """Manually trigger quote collection"""
-    try:
-        doc_id = await QuoteService.fetch_and_save_quotes()
+# @app.get("/snapshot", include_in_schema=False)
+# async def save_snapshot():
+#     """Manually trigger quote collection"""
+#     try:
+#         doc_id = await QuoteService.fetch_and_save_quotes()
+#
+#         return f"Snapshot saved with the id: {doc_id}"
+#
+#     except Exception as e:
+#         logger.error(f"Manual collection failed: {e}")
+#         raise HTTPException(status_code=500, detail=f"Collection failed: {str(e)}")
 
-        return f"Snapshot saved with the id: {doc_id}"
 
-    except Exception as e:
-        logger.error(f"Manual collection failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Collection failed: {str(e)}")
-
-
-@app.get("/favicon.ico")
+@app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     """Serve the favicon"""
     return FileResponse("favicon.ico", media_type="image/x-icon")

@@ -37,11 +37,16 @@ class QuoteSnapshot(BaseModel):
         arbitrary_types_allowed = True
 
 
+class AppRate(BaseModel):
+    app_name: str
+    rate: float
+
+
 # API Response Models
 class SnapshotResponse(BaseModel):
     id: str
     timestamp: datetime
-    quotes: Dict[str, float]
+    quotes: List[AppRate]
     total_apps: int
 
 
