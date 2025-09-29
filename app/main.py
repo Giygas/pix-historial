@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.database import tracker
@@ -121,6 +122,12 @@ async def save_snapshot():
     except Exception as e:
         logger.error(f"Manual collection failed: {e}")
         raise HTTPException(status_code=500, detail=f"Collection failed: {str(e)}")
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Serve the favicon"""
+    return FileResponse("favicon.ico", media_type="image/x-icon")
 
 
 @app.get("/health", response_model=HealthCheckResponse)
