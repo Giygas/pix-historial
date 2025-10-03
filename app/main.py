@@ -9,7 +9,12 @@ from fastapi.responses import FileResponse
 from app.config import settings
 from app.database import tracker
 from app.logger import logger
-from app.models import AppHistoryResponse, HealthCheckResponse, SnapshotResponse
+from app.models import (
+    AppHistoryResponse,
+    AppRate,
+    HealthCheckResponse,
+    SnapshotResponse,
+)
 from app.services import collect_quotes_background
 
 # from app.services import QuoteService, collect_quotes_background
@@ -92,10 +97,12 @@ async def get_latest():
     if not latest:
         raise HTTPException(status_code=404, detail="No snapshots found")
 
+    print(latest)
+
     return SnapshotResponse(
         id="latest",
         timestamp=latest.timestamp,
-        quotes=latest.quotes,
+        quotes=[AppRate(app_name=k, rate=v) for k, v in latest.quotes.items()],
         total_apps=len(latest.quotes),
     )
 

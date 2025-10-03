@@ -62,15 +62,12 @@ class QuoteTracker:
             return QuoteSnapshot(**doc)
         return None
 
-    async def get_snapshots_since(
-        self, since: datetime, limit: int = 100
-    ) -> List[QuoteSnapshot]:
+    async def get_snapshots_since(self, since: datetime) -> List[QuoteSnapshot]:
         """Get validated snapshots since a given time"""
         docs = list(
             self.collection.find(
                 {"timestamp": {"$gte": since}},
                 sort=[("timestamp", DESCENDING)],
-                limit=limit,
             )
         )
 
