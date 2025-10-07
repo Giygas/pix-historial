@@ -3,16 +3,26 @@ from datetime import datetime, timedelta, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import FileResponse, JSONResponse
+from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR, HTTP_404_NOT_FOUND
 
 from app.config import settings
 from app.database import tracker
-from app.exceptions import QuoteServiceError
+from app.exceptions import (
+    QuoteServiceError,
+    QuoteAPIConnectionError,
+    QuoteAPITimeoutError,
+    QuoteDatabaseError,
+    QuoteDataValidationError,
+    QuoteDataParsingError,
+)
 from app.logger import logger
 from app.models import (
     AppHistoryResponse,
     AppRate,
+    ErrorResponse,
+    NotFoundErrorResponse,
     HealthCheckResponse,
     SnapshotResponse,
 )
@@ -78,6 +88,148 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+
+# Exception Handlers for Structured Error Responses
+@app.exception_handler(QuoteServiceError)
+async def quote_service_exception_handler(
+    request: Request, exc: QuoteServiceError
+) -> JSONResponse:
+    """Handle all custom quote service exceptions."""
+    logger.error(f"QuoteServiceError in {request.url.path}: {exc.message}")
+
+    return JSONResponse(
+        status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+        content=ErrorResponse(
+            error=exc.__class__.__name__,
+            message=exc.message,
+            details=exc.details,
+            path=str(request.url.path),
+            request_id=request.headers.get("X-Request-ID"),
+        ).dict(),
+    )
+
+
+@app.exception_handler(QuoteAPIConnectionError)
+async def api_connection_error_handler(
+    request: Request, exc: QuoteAPIConnectionError
+) -> JSONResponse:
+    """Handle API connection errors with specific status code."""
+    logger.error(f"API connection error in {request.url.path}: {exc.message}")
+
+    return JSONResponse(
+        status_code=503,  # Service Unavailable
+        content=ErrorResponse(
+            error=exc.__class__.__name__,
+            message="External API service is currently unavailable",
+            details=exc.details,
+            path=str(request.url.path),
+            request_id=request.headers.get("X-Request-ID"),
+        ).dict(),
+    )
+
+
+@app.exception_handler(QuoteAPITimeoutError)
+async def api_timeout_error_handler(
+    request: Request, exc: QuoteAPITimeoutError
+) -> JSONResponse:
+    """Handle API timeout errors with specific status code."""
+    logger.warning(f"API timeout in {request.url.path}: {exc.message}")
+
+    return JSONResponse(
+        status_code=408,  # Request Timeout
+        content=ErrorResponse(
+            error=exc.__class__.__name__,
+            message="External API request timed out",
+            details=exc.details,
+            path=str(request.url.path),
+            request_id=request.headers.get("X-Request-ID"),
+        ).dict(),
+    )
+
+
+@app.exception_handler(QuoteDatabaseError)
+async def database_error_handler(
+    request: Request, exc: QuoteDatabaseError
+) -> JSONResponse:
+    """Handle database errors with specific status code."""
+    logger.error(f"Database error in {request.url.path}: {exc.message}")
+
+    return JSONResponse(
+        status_code=503,  # Service Unavailable
+        content=ErrorResponse(
+            error=exc.__class__.__name__,
+            message="Database service is currently unavailable",
+            details=exc.details,
+            path=str(request.url.path),
+            request_id=request.headers.get("X-Request-ID"),
+        ).dict(),
+    )
+
+
+@app.exception_handler(QuoteDataValidationError)
+async def validation_error_handler(
+    request: Request, exc: QuoteDataValidationError
+) -> JSONResponse:
+    """Handle data validation errors."""
+    logger.warning(f"Validation error in {request.url.path}: {exc.message}")
+
+    return JSONResponse(
+        status_code=422,  # Unprocessable Entity
+        content=ErrorResponse(
+            error=exc.__class__.__name__,
+            message="Data validation failed",
+            details=exc.details,
+            path=str(request.url.path),
+            request_id=request.headers.get("X-Request-ID"),
+        ).dict(),
+    )
+
+
+@app.exception_handler(QuoteDataParsingError)
+async def parsing_error_handler(
+    request: Request, exc: QuoteDataParsingError
+) -> JSONResponse:
+    """Handle data parsing errors."""
+    logger.error(f"Data parsing error in {request.url.path}: {exc.message}")
+
+    return JSONResponse(
+        status_code=502,  # Bad Gateway
+        content=ErrorResponse(
+            error=exc.__class__.__name__,
+            message="Failed to parse external API response",
+            details=exc.details,
+            path=str(request.url.path),
+            request_id=request.headers.get("X-Request-ID"),
+        ).dict(),
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    """Handle FastAPI HTTPExceptions with structured format."""
+    logger.warning(f"HTTPException in {request.url.path}: {exc.detail}")
+
+    if exc.status_code == HTTP_404_NOT_FOUND:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=NotFoundErrorResponse(
+                error="NotFound",
+                message=str(exc.detail),
+                path=str(request.url.path),
+                request_id=request.headers.get("X-Request-ID"),
+            ).dict(),
+        )
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error="HTTPException",
+            message=str(exc.detail),
+            path=str(request.url.path),
+            request_id=request.headers.get("X-Request-ID"),
+        ).dict(),
+    )
 
 
 @app.get("/")

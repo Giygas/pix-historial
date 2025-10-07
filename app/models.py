@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -68,3 +68,46 @@ class HealthCheckResponse(BaseModel):
     timestamp: datetime
     uptime: str
     mongo_ping: str
+
+
+# Error Response Models
+class ErrorDetail(BaseModel):
+    """Detailed error information for debugging."""
+
+    field: Optional[str] = None
+    value: Optional[Any] = None
+    constraint: Optional[str] = None
+
+
+class ErrorResponse(BaseModel):
+    """Standardized error response format for API endpoints."""
+
+    error: str = Field(..., description="Error type/class name")
+    message: str = Field(..., description="Human-readable error message")
+    details: Optional[Dict[str, Any]] = Field(
+        default=None, description="Additional error context"
+    )
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    request_id: Optional[str] = Field(
+        default=None, description="Request correlation ID"
+    )
+    path: Optional[str] = Field(default=None, description="API endpoint path")
+
+
+class ValidationErrorResponse(ErrorResponse):
+    """Specialized error response for validation errors."""
+
+    validation_errors: List[ErrorDetail] = Field(
+        default_factory=list, description="Field-level validation errors"
+    )
+
+
+class NotFoundErrorResponse(ErrorResponse):
+    """Specialized error response for 404 not found errors."""
+
+    resource: Optional[str] = Field(
+        default=None, description="Type of resource that was not found"
+    )
+    resource_id: Optional[str] = Field(
+        default=None, description="ID of the resource that was not found"
+    )
