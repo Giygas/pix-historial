@@ -97,8 +97,6 @@ async def get_latest():
     if not latest:
         raise HTTPException(status_code=404, detail="No snapshots found")
 
-    print(latest)
-
     return SnapshotResponse(
         id="latest",
         timestamp=latest.timestamp,
