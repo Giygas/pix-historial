@@ -2,11 +2,13 @@ venv/
 .mypy_cache
 .ruff_cache
 .env
+.pytest_cache
 app/__pycache__
+tests/__pycache__
 app/__pycache__/
 app/__pycache__/**
 logs
 ai/
 AGENTS.md
-
+.coverage
 .DS_Store

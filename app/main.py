@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 
 from app.config import settings
@@ -108,7 +108,10 @@ async def get_latest():
 
 
 @app.get("/apps/{app_name}", response_model=AppHistoryResponse)
-async def app_history(app_name, hours: int = 24):
+async def app_history(
+    app_name: str,
+    hours: int = Query(default=24, ge=1, le=168),  # 1 hour to 1 week
+):
     """Get rate history for a specific app"""
     history = await tracker.get_app_history(app_name, hours)
 

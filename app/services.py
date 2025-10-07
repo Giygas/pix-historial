@@ -22,11 +22,8 @@ class QuoteService:
             logger.info(f"Successfully saved quotes with ID: {doc_id}")
             return doc_id
 
-        except requests.RequestException as e:
-            logger.error(f"Failed to fetch quotes from API: {e}")
-            raise
         except Exception as e:
-            logger.error(f"Failed to save quotes: {e}")
+            logger.error(f"Failed to fetch or save quotes: {e}")
             raise
 
 
