@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.database import tracker
+from app.exceptions import QuoteServiceError
 from app.logger import logger
 from app.models import (
     AppHistoryResponse,
@@ -150,6 +151,10 @@ async def health_check():
         db_status = "connected"
         last_update = latest.timestamp.astimezone(timezone.utc) if latest else None
 
+    except QuoteServiceError as e:
+        logger.error(f"Health check failed: {e}")
+        db_status = f"service_error: {str(e)}"
+        last_update = None
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         db_status = f"error: {str(e)}"
@@ -159,11 +164,16 @@ async def health_check():
     uptime_seconds = (now - app_start_time).total_seconds()
     uptime = timedelta(seconds=uptime_seconds)
 
+    try:
+        mongo_ping = tracker.get_mongo_ping_time()
+    except Exception:
+        mongo_ping = None
+
     return {
         "status": "healthy" if db_status == "connected" else "unhealthy",
         "database": db_status,
         "last_update": last_update,
         "timestamp": datetime.now(),
         "uptime": str(uptime),
-        "mongo_ping": str(tracker.get_mongo_ping_time()) + " ms",
+        "mongo_ping": f"{mongo_ping} ms" if mongo_ping else "unknown",
     }
