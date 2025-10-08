@@ -25,7 +25,7 @@ class TestAPIEndpointsSimple:
         assert "BRL/ARS exchange rates" in response.text
 
     @patch("app.main.tracker")
-    def test_latest_endpoint_success(self, mock_tracker, client):
+    def test_latest_endpoint_success(self, mock_tracker):
         """Test latest endpoint with successful response"""
         # Mock the tracker response
         mock_snapshot = QuoteSnapshot(
@@ -34,6 +34,7 @@ class TestAPIEndpointsSimple:
         )
         mock_tracker.get_latest_snapshot = AsyncMock(return_value=mock_snapshot)
 
+        client = TestClient(app)
         response = client.get("/latest")
 
         assert response.status_code == 200
@@ -48,35 +49,36 @@ class TestAPIEndpointsSimple:
         assert "app2" in quote_names
 
     @patch("app.main.tracker")
-    def test_latest_endpoint_no_snapshots(self, mock_tracker, client):
+    def test_latest_endpoint_no_snapshots(self, mock_tracker):
         """Test latest endpoint when no snapshots exist"""
         mock_tracker.get_latest_snapshot = AsyncMock(return_value=None)
 
+        client = TestClient(app)
         response = client.get("/latest")
 
         assert response.status_code == 404
         data = response.json()
-        assert data["detail"] == "No snapshots found"
+        assert data["error"] == "NotFound"
+        assert "No snapshots found" in data["message"]
 
     @patch("app.main.tracker")
-    def test_app_history_success(self, mock_tracker, client):
+    def test_app_history_success(self, mock_tracker):
         """Test app history endpoint with successful response"""
         app_name = "app1"
         hours = 24
 
         # Mock history data
         mock_history = [
-            {"timestamp": datetime.now(timezone.utc).isoformat(), "rate": 1850.5},
+            {"timestamp": datetime.now(timezone.utc), "rate": 1850.5},
             {
-                "timestamp": (
-                    datetime.now(timezone.utc) - timedelta(hours=1)
-                ).isoformat(),
+                "timestamp": (datetime.now(timezone.utc) - timedelta(hours=1)),
                 "rate": 1852.0,
             },
         ]
 
         mock_tracker.get_app_history = AsyncMock(return_value=mock_history)
 
+        client = TestClient(app)
         response = client.get(f"/apps/{app_name}?hours={hours}")
 
         assert response.status_code == 200
@@ -92,29 +94,32 @@ class TestAPIEndpointsSimple:
             assert isinstance(item["rate"], (int, float))
 
     @patch("app.main.tracker")
-    def test_app_history_not_found(self, mock_tracker, client):
+    def test_app_history_not_found(self, mock_tracker):
         """Test app history endpoint when app not found"""
         app_name = "nonexistent_app"
 
         mock_tracker.get_app_history = AsyncMock(return_value=[])
 
+        client = TestClient(app)
         response = client.get(f"/apps/{app_name}")
 
         assert response.status_code == 404
         data = response.json()
-        assert "No history found for app" in data["detail"]
-        assert app_name in data["detail"]
+        assert data["error"] == "NotFound"
+        assert "No history found for app" in data["message"]
+        assert app_name in data["message"]
 
     @patch("app.main.tracker")
-    def test_health_check_healthy(self, mock_tracker, client):
+    def test_health_check_healthy(self, mock_tracker):
         """Test health check endpoint when healthy"""
         # Mock healthy responses
         mock_snapshot = QuoteSnapshot(
             timestamp=datetime.now(timezone.utc), quotes={"app1": 1850.5}
         )
         mock_tracker.get_latest_snapshot = AsyncMock(return_value=mock_snapshot)
-        mock_tracker.get_mongo_ping_time = Mock(return_value=5.5)
+        mock_tracker.get_mongo_ping_time.return_value = 5.5
 
+        client = TestClient(app)
         response = client.get("/health")
 
         assert response.status_code == 200
@@ -128,13 +133,14 @@ class TestAPIEndpointsSimple:
         assert "5.5 ms" in data["mongo_ping"]
 
     @patch("app.main.tracker")
-    def test_health_check_unhealthy(self, mock_tracker, client):
+    def test_health_check_unhealthy(self, mock_tracker):
         """Test health check endpoint when unhealthy"""
         # Mock unhealthy responses
         mock_tracker.get_latest_snapshot = AsyncMock(
             side_effect=Exception("Connection failed")
         )
 
+        client = TestClient(app)
         response = client.get("/health")
 
         assert response.status_code == 200

@@ -29,10 +29,13 @@ class TestQuoteTracker:
 
     def test_tracker_initialization(self, mock_client):
         """Test QuoteTracker initialization"""
-        with patch("app.database.settings"):
+        with patch("app.database.settings") as mock_settings:
+            mock_settings.MONGO_URI = "mongodb://localhost:27017"
+            mock_settings.DB_NAME = "test_db"
+
             tracker = QuoteTracker()
 
-            assert tracker.client == mock_client
+            mock_client.assert_called_once_with("mongodb://localhost:27017")
             assert hasattr(tracker, "db")
             assert hasattr(tracker, "collection")
 

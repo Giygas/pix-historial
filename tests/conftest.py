@@ -75,6 +75,18 @@ def mock_tracker():
 
 
 @pytest.fixture
+def tracker_instance():
+    """QuoteTracker instance for testing"""
+    with patch("app.database.settings") as mock_settings:
+        mock_settings.MONGO_URI = "mongodb://localhost:27017"
+        mock_settings.DB_NAME = "test_db"
+        with patch("pymongo.MongoClient") as mock_client:
+            with patch.object(QuoteTracker, "createIndexes"):
+                tracker = QuoteTracker()
+                yield tracker
+
+
+@pytest.fixture
 def mock_requests():
     """Mock requests module for testing"""
     with patch("app.services.requests") as mock:

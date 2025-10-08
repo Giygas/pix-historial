@@ -3,6 +3,7 @@ from unittest.mock import Mock, AsyncMock, patch
 import requests
 
 from app.services import QuoteService, collect_quotes_background
+from app.exceptions import QuoteAPIConnectionError
 
 
 class TestQuoteService:
@@ -12,56 +13,79 @@ class TestQuoteService:
     async def test_fetch_and_save_quotes_success(self, mock_requests):
         """Test successful quote fetching and saving"""
         with patch("app.services.tracker") as mock_tracker:
-            mock_tracker.save_snapshot = AsyncMock(
-                return_value="507f1f77bcf86cd799439011"
-            )
+            with patch("app.services.settings") as mock_settings:
+                mock_settings.QUOTES_API_URL = "https://test-api.com/quotes"
+                mock_tracker.save_snapshot = AsyncMock(
+                    return_value="507f1f77bcf86cd799439011"
+                )
 
-            doc_id = await QuoteService.fetch_and_save_quotes()
+                doc_id = await QuoteService.fetch_and_save_quotes()
 
-            assert doc_id == "507f1f77bcf86cd799439011"
-            mock_requests.get.assert_called_once()
-            mock_tracker.save_snapshot.assert_called_once()
+                assert doc_id == "507f1f77bcf86cd799439011"
+                mock_requests.get.assert_called_once()
+                mock_tracker.save_snapshot.assert_called_once()
 
-            # Verify the API was called with correct parameters
-            mock_requests.get.assert_called_with(
-                patch("app.services.settings").QUOTES_API_URL, timeout=30
-            )
+                # Verify the API was called with correct parameters
+                mock_requests.get.assert_called_with(
+                    "https://test-api.com/quotes", timeout=30
+                )
 
     @pytest.mark.asyncio
     async def test_fetch_and_save_quotes_request_exception(self, mock_requests):
         """Test handling of request exceptions"""
-        mock_requests.get.side_effect = requests.RequestException("Connection error")
+        with patch("app.services.settings") as mock_settings:
+            mock_settings.QUOTES_API_URL = "https://test-api.com/quotes"
+            mock_requests.get.side_effect = requests.RequestException(
+                "Connection error"
+            )
 
-        with pytest.raises(requests.RequestException, match="Connection error"):
+        from app.exceptions import QuoteAPIConnectionError
+
+        with pytest.raises(QuoteAPIConnectionError, match="API request failed"):
             await QuoteService.fetch_and_save_quotes()
 
     @pytest.mark.asyncio
     async def test_fetch_and_save_quotes_timeout(self, mock_requests):
         """Test handling of timeout exceptions"""
-        mock_requests.get.side_effect = requests.Timeout("Request timed out")
+        with patch("app.services.settings") as mock_settings:
+            mock_settings.QUOTES_API_URL = "https://test-api.com/quotes"
+            mock_requests.get.side_effect = requests.Timeout("Request timed out")
 
-        with pytest.raises(requests.Timeout, match="Request timed out"):
+        from app.exceptions import QuoteAPITimeoutError
+
+        with pytest.raises(QuoteAPITimeoutError, match="API request timed out"):
             await QuoteService.fetch_and_save_quotes()
 
     @pytest.mark.asyncio
     async def test_fetch_and_save_quotes_http_error(self, mock_requests):
         """Test handling of HTTP errors"""
-        mock_response = Mock()
-        mock_response.raise_for_status.side_effect = requests.HTTPError("404 Not Found")
-        mock_requests.get.return_value = mock_response
+        with patch("app.services.settings") as mock_settings:
+            mock_settings.QUOTES_API_URL = "https://test-api.com/quotes"
+            mock_response = Mock()
+            mock_response.raise_for_status.side_effect = requests.HTTPError(
+                "404 Not Found"
+            )
+            mock_requests.get.return_value = mock_response
 
-        with pytest.raises(requests.HTTPError, match="404 Not Found"):
+        from app.exceptions import QuoteAPIConnectionError
+
+        with pytest.raises(QuoteAPIConnectionError, match="API request failed"):
             await QuoteService.fetch_and_save_quotes()
 
     @pytest.mark.asyncio
     async def test_fetch_and_save_quotes_json_error(self, mock_requests):
         """Test handling of JSON parsing errors"""
-        mock_response = Mock()
-        mock_response.raise_for_status = Mock()
-        mock_response.json.side_effect = ValueError("Invalid JSON")
-        mock_requests.get.return_value = mock_response
+        with patch("app.services.settings") as mock_settings:
+            mock_settings.QUOTES_API_URL = "https://test-api.com/quotes"
+            mock_response = Mock()
+            mock_response.raise_for_status.return_value = None
+            mock_response.json.side_effect = ValueError("Invalid JSON")
+            mock_response.text = "Invalid response text"
+            mock_requests.get.return_value = mock_response
 
-        with pytest.raises(ValueError, match="Invalid JSON"):
+        from app.exceptions import QuoteDataParsingError
+
+        with pytest.raises(QuoteDataParsingError, match="Invalid JSON response"):
             await QuoteService.fetch_and_save_quotes()
 
     @pytest.mark.asyncio
@@ -101,8 +125,9 @@ class TestCollectQuotesBackground:
         with patch("app.services.QuoteService.fetch_and_save_quotes") as mock_fetch:
             mock_fetch.side_effect = Exception("Collection failed")
 
-            # Should not raise exception, should handle it gracefully
-            await collect_quotes_background()
+            # Should raise exception to trigger retry mechanism
+            with pytest.raises(Exception, match="Collection failed"):
+                await collect_quotes_background()
 
             mock_fetch.assert_called_once()
 
@@ -112,8 +137,9 @@ class TestCollectQuotesBackground:
         with patch("app.services.QuoteService.fetch_and_save_quotes") as mock_fetch:
             mock_fetch.side_effect = requests.RequestException("API unavailable")
 
-            # Should not raise exception, should handle it gracefully
-            await collect_quotes_background()
+            # Should raise exception to trigger retry mechanism
+            with pytest.raises(requests.RequestException, match="API unavailable"):
+                await collect_quotes_background()
 
             mock_fetch.assert_called_once()
 
@@ -148,7 +174,9 @@ class TestQuoteServiceIntegration:
     @pytest.mark.asyncio
     async def test_error_propagation(self, mock_requests):
         """Test that errors are properly propagated"""
-        mock_requests.get.side_effect = requests.ConnectionError("Network error")
+        with patch("app.services.settings") as mock_settings:
+            mock_settings.QUOTES_API_URL = "https://test-api.com/quotes"
+            mock_requests.get.side_effect = requests.ConnectionError("Network error")
 
-        with pytest.raises(requests.ConnectionError):
-            await QuoteService.fetch_and_save_quotes()
+            with pytest.raises(QuoteAPIConnectionError):
+                await QuoteService.fetch_and_save_quotes()
