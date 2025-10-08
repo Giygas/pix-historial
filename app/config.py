@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     MONGO_URI: str = "mongodb://localhost:27017"
     DB_NAME: str = Field(...)
     QUOTES_API_URL: str = Field(...)
-    COLLECTION_INTERVAL: int = 1800
+    COLLECTION_INTERVAL: int = 900
     API_TITLE: str = Field(...)
     API_VERSION: str = Field(...)
 
