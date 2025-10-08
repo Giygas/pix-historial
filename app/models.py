@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, Field, RootModel, ConfigDict
 
 
 # API Response Models
@@ -30,11 +30,10 @@ class ApiResponse(RootModel[Dict[str, Exchange]]):
 
 # Database Models
 class QuoteSnapshot(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     quotes: Dict[str, float] = Field(..., description="App name to quote mapping")
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 class AppRate(BaseModel):
