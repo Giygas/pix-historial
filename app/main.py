@@ -5,6 +5,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
 from app.config import settings
@@ -22,9 +23,11 @@ from app.models import (
     AppHistoryResponse,
     AppRate,
     ErrorResponse,
-    HealthCheckResponse,
+    ErrorDetail,
     NotFoundErrorResponse,
+    HealthCheckResponse,
     SnapshotResponse,
+    ValidationErrorResponse,
 )
 from app.services import collect_quotes_background
 
@@ -199,6 +202,36 @@ async def parsing_error_handler(
             error=exc.__class__.__name__,
             message="Failed to parse external API response",
             details=exc.details,
+            path=str(request.url.path),
+            request_id=request.headers.get("X-Request-ID"),
+        ).model_dump(),
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    """Handle FastAPI/Pydantic validation errors with structured format."""
+    logger.warning(f"Validation error in {request.url.path}: {exc.errors()}")
+
+    # Convert FastAPI validation errors to our format
+    validation_errors = []
+    for error in exc.errors():
+        validation_errors.append(
+            ErrorDetail(
+                field=".".join(str(loc) for loc in error["loc"]),
+                value=error.get("input"),
+                constraint=f"{error['type']}: {error['msg']}",
+            )
+        )
+
+    return JSONResponse(
+        status_code=422,  # Unprocessable Entity
+        content=ValidationErrorResponse(
+            error="RequestValidationError",
+            message="Input validation failed",
+            validation_errors=validation_errors,
             path=str(request.url.path),
             request_id=request.headers.get("X-Request-ID"),
         ).model_dump(),
