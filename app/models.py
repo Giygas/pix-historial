@@ -93,6 +93,13 @@ class ErrorResponse(BaseModel):
     )
     path: Optional[str] = Field(default=None, description="API endpoint path")
 
+    def model_dump(self, **kwargs) -> Dict[str, Any]:
+        """Override model_dump to handle datetime serialization."""
+        data = super().model_dump(**kwargs)
+        if "timestamp" in data and isinstance(data["timestamp"], datetime):
+            data["timestamp"] = data["timestamp"].isoformat()
+        return data
+
 
 class ValidationErrorResponse(ErrorResponse):
     """Specialized error response for validation errors."""

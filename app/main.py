@@ -106,7 +106,7 @@ async def quote_service_exception_handler(
             details=exc.details,
             path=str(request.url.path),
             request_id=request.headers.get("X-Request-ID"),
-        ).dict(),
+        ).model_dump(),
     )
 
 
@@ -125,7 +125,7 @@ async def api_connection_error_handler(
             details=exc.details,
             path=str(request.url.path),
             request_id=request.headers.get("X-Request-ID"),
-        ).dict(),
+        ).model_dump(),
     )
 
 
@@ -144,7 +144,7 @@ async def api_timeout_error_handler(
             details=exc.details,
             path=str(request.url.path),
             request_id=request.headers.get("X-Request-ID"),
-        ).dict(),
+        ).model_dump(),
     )
 
 
@@ -163,7 +163,7 @@ async def database_error_handler(
             details=exc.details,
             path=str(request.url.path),
             request_id=request.headers.get("X-Request-ID"),
-        ).dict(),
+        ).model_dump(),
     )
 
 
@@ -182,7 +182,7 @@ async def validation_error_handler(
             details=exc.details,
             path=str(request.url.path),
             request_id=request.headers.get("X-Request-ID"),
-        ).dict(),
+        ).model_dump(),
     )
 
 
@@ -201,7 +201,7 @@ async def parsing_error_handler(
             details=exc.details,
             path=str(request.url.path),
             request_id=request.headers.get("X-Request-ID"),
-        ).dict(),
+        ).model_dump(),
     )
 
 
@@ -218,7 +218,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
                 message=str(exc.detail),
                 path=str(request.url.path),
                 request_id=request.headers.get("X-Request-ID"),
-            ).dict(),
+            ).model_dump(),
         )
 
     return JSONResponse(
@@ -228,7 +228,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
             message=str(exc.detail),
             path=str(request.url.path),
             request_id=request.headers.get("X-Request-ID"),
-        ).dict(),
+        ).model_dump(),
     )
 
 
