@@ -128,7 +128,7 @@ flowchart LR
 
 ### Core Functionality
 
-- ⏰ **Automated Data Collection** - Fetches rates every 15 minutes
+- ⏰ **Automated Data Collection** - Configurable cron-based scheduling (default: every 15 minutes at :00, :15, :30, :45)
 - 📊 **Historical Tracking** - Stores complete rate history
 - 📈 **Variance Analysis** - Track price changes over time
 - 🔍 **Multi-App Support** - Compare rates across different apps
@@ -191,12 +191,46 @@ DB_NAME=pix_historial
 QUOTES_API_URL=https://pix.ferminrp.com/quotes
 
 # Collection Settings
-COLLECTION_INTERVAL=900  # 15 minutes in seconds
+COLLECTION_CRON="*/15"  # Cron expression: "*/15" = every 15 minutes at :00, :15, :30, :45
 
 # API Settings
 API_TITLE="PIX Historial API"
 API_VERSION=1.0.0
 ```
+
+### ⏰ Scheduling Configuration
+
+The application uses cron-based scheduling for predictable data collection. Configure the `COLLECTION_CRON` environment variable:
+
+**Common Scheduling Patterns:**
+
+```env
+# Every 15 minutes at :00, :15, :30, :45 (default)
+COLLECTION_CRON="*/15"
+
+# Every 10 minutes at :00, :10, :20, :30, :40, :50
+COLLECTION_CRON="*/10"
+
+# Every 5 minutes
+COLLECTION_CRON="*/5"
+
+# Every 30 minutes at :00 and :30
+COLLECTION_CRON="0,30"
+
+# Every hour at :00
+COLLECTION_CRON="0"
+
+# Business hours only (9 AM - 6 PM, every 15 minutes)
+COLLECTION_CRON="*/15"
+# Note: Add hour="9-18" in code for business hours restriction
+```
+
+**Benefits of Cron Scheduling:**
+
+- 🎯 **Predictable timing**: Always runs at the same minute marks
+- 🔄 **Server restart friendly**: Aligns to schedule regardless of restart time
+- ⚡ **Flexible patterns**: Support complex scheduling needs
+- 📊 **Consistent data**: Regular intervals for better analysis
 
 ## 🏃‍♂️ Running the Application
 
@@ -216,8 +250,6 @@ uvicorn app.main:app --reload --root-path /pix-historial
 # Run with workers
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
-
-
 
 ## 📚 API Documentation
 
@@ -546,5 +578,3 @@ For support and questions:
 - 📖 Documentation: [Wiki](https://github.com/Giygas/pix-historial/wiki)
 
 ---
-
-**Built with ❤️ for the Brazilian fintech community**

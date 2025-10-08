@@ -2,10 +2,10 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
 from app.config import settings
@@ -22,10 +22,10 @@ from app.logger import logger
 from app.models import (
     AppHistoryResponse,
     AppRate,
-    ErrorResponse,
     ErrorDetail,
-    NotFoundErrorResponse,
+    ErrorResponse,
     HealthCheckResponse,
+    NotFoundErrorResponse,
     SnapshotResponse,
     ValidationErrorResponse,
 )
@@ -55,19 +55,17 @@ async def lifespan_with_scheduler(app: FastAPI):
             },
         )
 
-        # Add the job
+        # Add the job with cron-based scheduling
         scheduler.add_job(
             collect_quotes_background,
-            trigger=IntervalTrigger(seconds=settings.COLLECTION_INTERVAL),
+            trigger=CronTrigger(minute=settings.COLLECTION_CRON),
             id="quote_collection",
             name="Periodic Quote Collection",
             replace_existing=True,
         )
 
         scheduler.start()
-        logger.info(
-            f"Started scheduler - next run in {settings.COLLECTION_INTERVAL} seconds"
-        )
+        logger.info(f"Started scheduler - runs in {settings.COLLECTION_CRON}")
 
         yield
 
