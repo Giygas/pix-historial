@@ -234,12 +234,8 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
-    return {
-        "message": settings.API_TITLE,
-        "status": "running",
-        "version": settings.API_VERSION,
-    }
+    """Root endpoint - serve HTML documentation"""
+    return FileResponse("html/index.html", media_type="text/html")
 
 
 @app.get("/latest", response_model=SnapshotResponse)
