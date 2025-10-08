@@ -16,15 +16,13 @@ class TestAPIEndpointsSimple:
         return TestClient(app)
 
     def test_root_endpoint(self, client):
-        """Test root endpoint"""
+        """Test root endpoint serves HTML"""
         response = client.get("/")
 
         assert response.status_code == 200
-        data = response.json()
-        assert "message" in data
-        assert "status" in data
-        assert "version" in data
-        assert data["status"] == "running"
+        assert response.headers["content-type"] == "text/html; charset=utf-8"
+        assert "PIX Historial" in response.text
+        assert "BRL/ARS exchange rates" in response.text
 
     @patch("app.main.tracker")
     def test_latest_endpoint_success(self, mock_tracker, client):
