@@ -5,25 +5,25 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
-from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR, HTTP_404_NOT_FOUND
+from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
 from app.config import settings
 from app.database import tracker
 from app.exceptions import (
-    QuoteServiceError,
     QuoteAPIConnectionError,
     QuoteAPITimeoutError,
     QuoteDatabaseError,
-    QuoteDataValidationError,
     QuoteDataParsingError,
+    QuoteDataValidationError,
+    QuoteServiceError,
 )
 from app.logger import logger
 from app.models import (
     AppHistoryResponse,
     AppRate,
     ErrorResponse,
-    NotFoundErrorResponse,
     HealthCheckResponse,
+    NotFoundErrorResponse,
     SnapshotResponse,
 )
 from app.services import collect_quotes_background
@@ -257,7 +257,7 @@ async def get_latest():
 @app.get("/apps/{app_name}", response_model=AppHistoryResponse)
 async def app_history(
     app_name: str,
-    hours: int = Query(default=24, ge=1, le=168),  # 1 hour to 1 week
+    hours: int = Query(default=24, ge=1, le=720),  # 1 hour to 1 month
 ):
     """Get rate history for a specific app"""
     history = await tracker.get_app_history(app_name, hours)
