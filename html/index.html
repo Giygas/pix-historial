@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PIX Historial - PIX Exchange Rate Tracker</title>
+    <title>PIX Historial - BRL/ARS Exchange Rate Tracker</title>
     <style>
       * {
         margin: 0;
@@ -13,513 +13,623 @@
 
       body {
         font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          "Helvetica Neue", Arial, sans-serif;
-        background-color: #0f172a;
-        color: #f1f5f9;
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+          Arial, sans-serif;
         line-height: 1.6;
+        color: #1a1a1a;
+        background: #fafafa;
       }
 
       .container {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 0 1.5rem;
+        padding: 0 24px;
       }
 
       /* Header */
       header {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border-bottom: 1px solid #334155;
-        padding: 4rem 0;
-        text-align: center;
+        background: #ffffff;
+        border-bottom: 1px solid #e5e5e5;
+        padding: 24px 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
       }
 
-      h1 {
-        font-size: 3.5rem;
-        font-weight: 800;
-        margin-bottom: 1.5rem;
-        color: #f1f5f9;
-        text-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
 
-      h1 .highlight {
-        color: #6366f1;
+      .logo {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1a1a1a;
+        letter-spacing: -0.5px;
       }
 
-      .subtitle {
-        font-size: 1.5rem;
-        color: #94a3b8;
-        max-width: 800px;
-        margin: 0 auto;
+      nav {
+        display: flex;
+        gap: 32px;
       }
 
-      /* Sections */
+      nav a {
+        color: #666;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: color 0.2s;
+      }
+
+      nav a:hover {
+        color: #1a1a1a;
+      }
+
+      /* Hero Section */
+      .hero {
+        padding: 120px 0 80px;
+        background: #ffffff;
+        border-bottom: 1px solid #e5e5e5;
+      }
+
+      .hero h1 {
+        font-size: 56px;
+        font-weight: 700;
+        line-height: 1.1;
+        margin-bottom: 24px;
+        letter-spacing: -1.5px;
+        color: #1a1a1a;
+      }
+
+      .hero p {
+        font-size: 20px;
+        color: #666;
+        max-width: 600px;
+        line-height: 1.6;
+        margin-bottom: 40px;
+      }
+
+      .cta-button {
+        display: inline-block;
+        padding: 14px 32px;
+        background: #1a1a1a;
+        color: #ffffff;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 15px;
+        border-radius: 6px;
+        transition: all 0.2s;
+        border: 2px solid #1a1a1a;
+      }
+
+      .cta-button:hover {
+        background: #333;
+        border-color: #333;
+        transform: translateY(-1px);
+      }
+
+      .cta-secondary {
+        background: transparent;
+        color: #1a1a1a;
+        margin-left: 16px;
+      }
+
+      .cta-secondary:hover {
+        background: #f5f5f5;
+        border-color: #1a1a1a;
+      }
+
+      /* Section Styles */
       section {
-        padding: 4rem 0;
-        border-bottom: 1px solid #334155;
+        padding: 80px 0;
+      }
+
+      .section-header {
+        margin-bottom: 48px;
+      }
+
+      .section-label {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #999;
+        margin-bottom: 12px;
       }
 
       h2 {
-        font-size: 2.5rem;
+        font-size: 40px;
         font-weight: 700;
-        margin-bottom: 2rem;
-        color: #f1f5f9;
+        color: #1a1a1a;
+        letter-spacing: -1px;
+        margin-bottom: 16px;
       }
 
-      /* What is it section */
-      .description {
-        font-size: 1.125rem;
-        color: #94a3b8;
-        line-height: 1.8;
-        max-width: 900px;
-      }
-
-      .description p {
-        margin-bottom: 1.5rem;
+      .section-description {
+        font-size: 18px;
+        color: #666;
+        max-width: 700px;
       }
 
       /* Features Grid */
       .features-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 2rem;
-        margin-top: 2rem;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 32px;
+        margin-top: 48px;
       }
 
       .feature-card {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        border: 1px solid #475569;
-        border-radius: 12px;
-        padding: 2rem;
-        transition:
-          transform 0.3s ease,
-          box-shadow 0.3s ease;
+        padding: 32px;
+        background: #ffffff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        transition: all 0.3s;
       }
 
       .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2);
-        border-color: #6366f1;
+        border-color: #1a1a1a;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       }
 
       .feature-icon {
-        font-size: 3rem;
-        margin-bottom: 1rem;
+        width: 48px;
+        height: 48px;
+        background: #1a1a1a;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        font-size: 24px;
       }
 
       .feature-card h3 {
-        font-size: 1.5rem;
-        color: #6366f1;
-        margin-bottom: 1rem;
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #1a1a1a;
       }
 
       .feature-card p {
-        color: #cbd5e1;
-        line-height: 1.7;
-      }
-
-      /* How it works */
-      .steps-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 2rem;
-        margin-top: 2rem;
-      }
-
-      .step-card {
-        background: #1e293b;
-        border-left: 4px solid #6366f1;
-        padding: 1.5rem;
-        border-radius: 8px;
-      }
-
-      .step-number {
-        font-size: 2.5rem;
-        font-weight: 800;
-        color: #6366f1;
-        margin-bottom: 0.5rem;
-      }
-
-      .step-card h3 {
-        font-size: 1.25rem;
-        color: #f1f5f9;
-        margin-bottom: 0.75rem;
-      }
-
-      .step-card p {
-        color: #94a3b8;
+        color: #666;
+        font-size: 15px;
         line-height: 1.6;
       }
 
+      /* Code Block */
+      .code-block {
+        background: #1a1a1a;
+        border-radius: 8px;
+        padding: 32px;
+        margin: 32px 0;
+        overflow-x: auto;
+      }
+
+      .code-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #333;
+      }
+
+      .code-title {
+        color: #999;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      pre {
+        margin: 0;
+        font-family: "Monaco", "Courier New", monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #e5e5e5;
+      }
+
+      .code-comment {
+        color: #666;
+      }
+
+      .code-string {
+        color: #999;
+      }
+
       /* API Endpoints */
-      .endpoint-card {
-        background: #1e293b;
-        border: 1px solid #475569;
-        border-radius: 12px;
-        padding: 2rem;
-        margin-bottom: 2rem;
+      .endpoint-list {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        margin-top: 32px;
+      }
+
+      .endpoint {
+        background: #ffffff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 24px;
+        transition: all 0.2s;
+      }
+
+      .endpoint:hover {
+        border-color: #1a1a1a;
       }
 
       .endpoint-header {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        margin-bottom: 1rem;
-        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 12px;
       }
 
-      .method-badge {
-        background: #6366f1;
-        color: #f1f5f9;
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
+      .method {
+        font-size: 12px;
         font-weight: 700;
-        font-family: "Courier New", monospace;
-        font-size: 0.875rem;
+        padding: 4px 12px;
+        border-radius: 4px;
+        background: #1a1a1a;
+        color: #ffffff;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
       .endpoint-path {
-        font-family: "Courier New", monospace;
-        font-size: 1.125rem;
-        color: #6366f1;
+        font-family: "Monaco", "Courier New", monospace;
+        font-size: 14px;
+        color: #1a1a1a;
+        font-weight: 600;
       }
 
       .endpoint-description {
-        color: #cbd5e1;
-        margin-bottom: 1.5rem;
-        line-height: 1.7;
-      }
-
-      .params-list {
-        margin: 1.5rem 0;
-      }
-
-      .params-list h4 {
-        color: #f1f5f9;
-        margin-bottom: 0.75rem;
-      }
-
-      .params-list ul {
-        list-style: none;
-        padding-left: 0;
-      }
-
-      .params-list li {
-        color: #94a3b8;
-        margin-bottom: 0.5rem;
-        padding-left: 1rem;
-      }
-
-      .params-list code {
-        color: #6366f1;
-        font-family: "Courier New", monospace;
-        font-size: 0.875rem;
-        background: #334155;
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
-      }
-
-      .code-block {
-        background: #0f172a;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 1.5rem;
-        overflow-x: auto;
-        margin-top: 1rem;
-      }
-
-      .code-block pre {
-        font-family: "Courier New", monospace;
-        font-size: 0.875rem;
-        color: #cbd5e1;
+        color: #666;
+        font-size: 15px;
         line-height: 1.6;
       }
 
-      /* Getting Started */
-      .getting-started-card {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        border: 1px solid #475569;
-        border-radius: 12px;
-        padding: 2.5rem;
+      /* Stats */
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 32px;
+        padding: 60px 0;
+        background: #ffffff;
+        border-top: 1px solid #e5e5e5;
+        border-bottom: 1px solid #e5e5e5;
       }
 
-      .getting-started-card h3 {
-        font-size: 1.5rem;
-        color: #6366f1;
-        margin-bottom: 1rem;
+      .stat {
+        text-align: center;
+      }
+
+      .stat-number {
+        font-size: 48px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+        letter-spacing: -1px;
+      }
+
+      .stat-label {
+        font-size: 14px;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
       }
 
       /* Footer */
       footer {
-        background: #020617;
-        border-top: 1px solid #334155;
-        padding: 2rem 0;
+        background: #ffffff;
+        border-top: 1px solid #e5e5e5;
+        padding: 60px 0;
+        margin-top: 80px;
+      }
+
+      .footer-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 48px;
+      }
+
+      .footer-section h4 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: #1a1a1a;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .footer-section ul {
+        list-style: none;
+      }
+
+      .footer-section li {
+        margin-bottom: 12px;
+      }
+
+      .footer-section a {
+        color: #666;
+        text-decoration: none;
+        font-size: 14px;
+        transition: color 0.2s;
+      }
+
+      .footer-section a:hover {
+        color: #1a1a1a;
+      }
+
+      .footer-bottom {
+        margin-top: 48px;
+        padding-top: 24px;
+        border-top: 1px solid #e5e5e5;
         text-align: center;
-        color: #94a3b8;
+        color: #999;
+        font-size: 14px;
       }
 
       /* Responsive */
       @media (max-width: 768px) {
-        h1 {
-          font-size: 2.5rem;
+        .hero h1 {
+          font-size: 40px;
         }
 
-        .subtitle {
-          font-size: 1.25rem;
+        .hero p {
+          font-size: 18px;
         }
 
         h2 {
-          font-size: 2rem;
+          font-size: 32px;
         }
 
-        section {
-          padding: 3rem 0;
+        nav {
+          display: none;
         }
 
-        .endpoint-header {
-          flex-direction: column;
-          align-items: flex-start;
+        .cta-secondary {
+          display: none;
+        }
+
+        .features-grid {
+          grid-template-columns: 1fr;
         }
       }
     </style>
   </head>
   <body>
-    <!-- Header -->
     <header>
       <div class="container">
-        <h1>PIX <span class="highlight">Historial</span></h1>
-        <p class="subtitle">
-          Track and analyze BRL/ARS exchange rates from multiple financial apps
-        </p>
+        <div class="header-content">
+          <div class="logo">PIX Historial</div>
+          <nav>
+            <a href="#features">Features</a>
+            <a href="#documentation">Documentation</a>
+            <a href="#endpoints">Endpoints</a>
+            <a href="#contact">Contact</a>
+          </nav>
+        </div>
       </div>
     </header>
 
-    <!-- What is PIX Price API -->
-    <section>
+    <section class="hero">
       <div class="container">
-        <h2>What is PIX Historial?</h2>
-        <div class="description">
-          <p>
-            PIX Historial is a robust FastAPI application that tracks and analyzes
-            BRL/ARS exchange rates from multiple financial apps. It collects data
-            every 15 minutes to provide historical insights and price variance analysis
-            for Brazil's instant payment system (PIX).
+        <h1>Track BRL/ARS<br />Exchange Rates</h1>
+        <p>
+          PIX Historial tracks and analyzes BRL/ARS exchange rates from multiple
+          financial apps. Collects data every 15 minutes to provide historical
+          insights and price variance analysis for Brazil's instant payment system.
+        </p>
+        <div>
+          <a href="#documentation" class="cta-button">Get Started</a>
+          <a href="/docs" class="cta-button cta-secondary"
+            >View API Docs</a
+          >
+        </div>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div class="container">
+        <div
+          style="
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 48px;
+            flex-wrap: wrap;
+          "
+        >
+          <div class="stat">
+            <div class="stat-number">15min</div>
+            <div class="stat-label">Updates</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">MongoDB</div>
+            <div class="stat-label">Storage</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">FastAPI</div>
+            <div class="stat-label">Backend</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">REST</div>
+            <div class="stat-label">API</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-label">Features</div>
+          <h2>Everything you need to track BRL/ARS rates</h2>
+          <p class="section-description">
+            Comprehensive tools and endpoints for monitoring, analyzing, and
+            understanding BRL/ARS exchange rate variations across different platforms.
           </p>
         </div>
 
         <div class="features-grid">
-            <div class="feature-card">
-             <div class="feature-icon">⏰</div>
-             <h3>Automated Collection</h3>
-             <p>
-               Fetches BRL/ARS rates every 15 minutes from multiple financial apps
-             </p>
-           </div>
-
-           <div class="feature-card">
-             <div class="feature-icon">📊</div>
-             <h3>Historical Tracking</h3>
-             <p>
-               Complete rate history with timestamps for variance analysis
-             </p>
-           </div>
-
-           <div class="feature-card">
-             <div class="feature-icon">🔍</div>
-             <h3>Multi-App Support</h3>
-             <p>
-               Compare rates across different financial applications
-             </p>
-           </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- How It Works -->
-    <section>
-      <div class="container">
-        <h2>How It Works</h2>
-        <p class="description">
-          Our system continuously monitors BRL/ARS exchange rates from external APIs
-          and stores the data in MongoDB for comprehensive historical analysis.
-        </p>
-
-        <div class="steps-grid">
-          <div class="step-card">
-            <div class="step-number">01</div>
-            <h3>External API</h3>
-            <p>Fetches quotes from external PIX quotes API every 15 minutes</p>
-          </div>
-
-          <div class="step-card">
-            <div class="step-number">02</div>
-            <h3>MongoDB Storage</h3>
+          <div class="feature-card">
+            <div class="feature-icon">⏰</div>
+            <h3>Automated Collection</h3>
             <p>
-              All rate snapshots are stored with optimized indexes for fast queries
+              Fetches BRL/ARS rates every 15 minutes from multiple financial apps
+              for continuous monitoring.
             </p>
           </div>
-
-          <div class="step-card">
-            <div class="step-number">03</div>
-            <h3>FastAPI Endpoints</h3>
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Historical Tracking</h3>
             <p>
-              Query RESTful endpoints to retrieve latest rates, historical data,
-              or app-specific information
+              Complete rate history with timestamps for variance analysis and trend
+              identification.
             </p>
           </div>
-
-          <div class="step-card">
-            <div class="step-number">04</div>
-            <h3>Variance Analysis</h3>
+          <div class="feature-card">
+            <div class="feature-icon">🌐</div>
+            <h3>Multi-App Support</h3>
             <p>
-              Analyze rate trends, compare apps, and track price variations over time
+              Compare rates across different financial applications to find the best
+              exchange rates.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Scheduled Updates</h3>
+            <p>
+              Automated data collection every 15 minutes ensures you always have
+              recent exchange rate information.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📈</div>
+            <h3>Historical Analysis</h3>
+            <p>
+              Access complete historical data with timestamps to analyze rate trends
+              and variations over time.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h3>Secure & Reliable</h3>
+            <p>
+              Enterprise-grade security with 99.9% uptime guarantee and
+              encrypted data transmission.
             </p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- API Endpoints -->
-    <section>
+    <section id="documentation">
       <div class="container">
-        <h2>API Endpoints</h2>
-
-        <!-- Endpoint 1 -->
-        <div class="endpoint-card">
-          <div class="endpoint-header">
-            <span class="method-badge">GET</span>
-            <code class="endpoint-path">/latest</code>
-          </div>
-          <p class="endpoint-description">
-            Get the most recent BRL/ARS quote snapshot across all monitored apps
+        <div class="section-header">
+          <div class="section-label">Documentation</div>
+          <h2>Quick Start Guide</h2>
+          <p class="section-description">
+            Get up and running with PIX Historial in minutes. No complex setup
+            required.
           </p>
-          <div class="code-block">
-            <pre>
-{
-  "id": "latest",
-  "timestamp": "2025-01-08T10:30:00Z",
-  "quotes": [
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">Example Request</span>
+          </div>
+          <pre><span class="code-comment"># Fetch latest BRL/ARS rates</span>
+curl -X GET http://localhost:8000/pix-historial/latest \
+  -H <span class="code-string">"Content-Type: application/json"</span>
+
+<span class="code-comment"># Get historical data for specific app</span>
+curl -X GET http://localhost:8000/pix-historial/apps/app1?hours=24 \
+  -H <span class="code-string">"Content-Type: application/json"</span></pre>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">Example Response</span>
+          </div>
+          <pre>{
+  <span class="code-string">"id"</span>: <span class="code-string">"latest"</span>,
+  <span class="code-string">"timestamp"</span>: <span class="code-string">"2025-01-08T10:30:00Z"</span>,
+  <span class="code-string">"quotes"</span>: [
     {
-      "app_name": "app1",
-      "rate": 5.23
+      <span class="code-string">"app_name"</span>: <span class="code-string">"app1"</span>,
+      <span class="code-string">"rate"</span>: 5.23
     },
     {
-      "app_name": "app2",
-      "rate": 5.25
+      <span class="code-string">"app_name"</span>: <span class="code-string">"app2"</span>,
+      <span class="code-string">"rate"</span>: 5.25
     }
   ],
-  "total_apps": 2
-}</pre
-            >
-          </div>
+  <span class="code-string">"total_apps"</span>: 2
+}</pre>
         </div>
+      </div>
+    </section>
 
-        <!-- Endpoint 2 -->
-        <div class="endpoint-card">
-          <div class="endpoint-header">
-            <span class="method-badge">GET</span>
-            <code class="endpoint-path">/apps/{app_name}</code>
-          </div>
-          <p class="endpoint-description">
-            Get rate history for a specific app with time range filtering
+    <section id="endpoints">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-label">API Reference</div>
+          <h2>Available Endpoints</h2>
+          <p class="section-description">
+            Complete list of API endpoints for accessing BRL/ARS exchange rate data and
+            analytics.
           </p>
-
-          <div class="params-list">
-            <h4>Query Parameters:</h4>
-            <ul>
-              <li><code>hours</code> - Time range in hours (1-168, default: 24)</li>
-            </ul>
-          </div>
-
-          <div class="code-block">
-            <pre>
-{
-  "app_name": "app1",
-  "history": [
-    {
-      "timestamp": "2025-01-08T10:30:00Z",
-      "rate": 5.23
-    },
-    {
-      "timestamp": "2025-01-08T10:15:00Z",
-      "rate": 5.22
-    }
-  ],
-  "total_records": 2
-}</pre
-            >
-          </div>
         </div>
 
-        <!-- Endpoint 3 -->
-        <div class="endpoint-card">
-          <div class="endpoint-header">
-            <span class="method-badge">GET</span>
-            <code class="endpoint-path">/health</code>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <div class="endpoint-header">
+              <span class="method">GET</span>
+              <span class="endpoint-path">/latest</span>
+            </div>
+            <p class="endpoint-description">
+              Get the most recent BRL/ARS quote snapshot across all monitored apps.
+            </p>
           </div>
-          <p class="endpoint-description">Check application and database health status</p>
-          <div class="code-block">
-            <pre>
-{
-  "status": "healthy",
-  "database": "connected",
-  "last_update": "2025-01-08T10:30:00Z",
-  "timestamp": "2025-01-08T10:31:00Z",
-  "uptime": "2:30:15",
-  "mongo_ping": "2.5 ms"
-}</pre
-            >
+
+          <div class="endpoint">
+            <div class="endpoint-header">
+              <span class="method">GET</span>
+              <span class="endpoint-path">/apps/{app_name}</span>
+            </div>
+            <p class="endpoint-description">
+              Get rate history for a specific app with time range filtering (hours parameter: 1-168, default: 24).
+            </p>
+          </div>
+
+          <div class="endpoint">
+            <div class="endpoint-header">
+              <span class="method">GET</span>
+              <span class="endpoint-path">/health</span>
+            </div>
+            <p class="endpoint-description">
+              Check application and database health status with uptime and ping information.
+            </p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Getting Started -->
-    <section>
+    <footer id="contact">
       <div class="container">
-        <h2>Getting Started</h2>
-        <div class="getting-started-card">
-          <h3>Example Request</h3>
-          <p class="endpoint-description">
-            Here's a simple example of how to fetch the latest BRL/ARS rates using
-            Python:
-          </p>
-          <div class="code-block">
-            <pre>
-import requests
-
-# Base URL (adjust for your deployment)
-BASE_URL = "http://localhost:8000/pix-historial"
-
-# Fetch latest rates
-response = requests.get(f'{BASE_URL}/latest')
-data = response.json()
-
-# Print rates for each app
-print(f"Latest snapshot from {data['timestamp']}:")
-for quote in data['quotes']:
-    print(f"  {quote['app_name']}: {quote['rate']} ARS")
-
-# Fetch app history (last 24 hours)
-app_name = "app1"
-history_response = requests.get(f'{BASE_URL}/apps/{app_name}')
-history_data = history_response.json()
-
-print(f"\nHistory for {app_name} ({history_data['total_records']} records):")
-for record in history_data['history'][-5:]:  # Last 5 records
-    print(f"  {record['timestamp']}: {record['rate']} ARS")</pre
-            >
-          </div>
+        <div style="display: flex; justify-content: center; align-items: center; gap: 32px; margin-bottom: 24px;">
+          <a href="https://github.com/Giygas/pix-historial" style="color: #666; text-decoration: none; font-size: 14px; transition: color 0.2s;">GitHub</a>
+          <a href="https://www.linkedin.com/in/gustavorossich/" style="color: #666; text-decoration: none; font-size: 14px; transition: color 0.2s;">LinkedIn</a>
+          <a href="mailto:gustavorossich@outlook.com" style="color: #666; text-decoration: none; font-size: 14px; transition: color 0.2s;">Email</a>
         </div>
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer>
-      <div class="container">
-        <p>
-          PIX Historial - Track BRL/ARS exchange rates across multiple financial apps
-        </p>
+        <div class="footer-bottom">
+          <p>&copy; 2025 PIX Historial. All rights reserved.</p>
+        </div>
       </div>
     </footer>
   </body>
