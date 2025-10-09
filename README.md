@@ -21,71 +21,20 @@ Users can transact using:
 - 📧 Email addresses
 - 🔑 Random keys
 
-## 🏗️ Architecture Overview
+## 🏗️ Architecture
 
-```mermaid
-%%{init: {
-  'theme': 'base',
-  'themeVariables': {
-    'primaryColor': '#f3f9ff',
-    'primaryTextColor': '#0d47a1',
-    'primaryBorderColor': '#2196f3',
-    'lineColor': '#42a5f5',
-    'sectionBkgColor': '#e3f2fd',
-    'altSectionBkgColor': '#bbdefb',
-    'gridColor': '#90caf9'
-  }
-}}%%
-flowchart LR
-    subgraph External[External Systems]
-        API[External API]
-    end
+The application follows a clean layered architecture:
 
-    subgraph App[Application Layer]
-        FastAPI[FastAPI App]
-        Handlers[Exception Handlers]
-        Validation[Request Validation]
-    end
+- **API Layer**: FastAPI endpoints with request validation and error handling
+- **Service Layer**: Business logic, external API integration, and background scheduling
+- **Data Layer**: MongoDB with optimized time-series indexes
+- **Utilities**: Logging, configuration management, and error handling
 
-    subgraph Business[Business Logic]
-        Service[Quote Service]
-        Retry[Retry Mechanism]
-        Error[Error Handling]
-        Scheduler[Scheduler]
-        Monitor[Health Monitor]
-    end
-
-    subgraph Data[Data Layer]
-        MongoDB[MongoDB]
-        Indexes[Indexes]
-        Snapshots[Snapshots]
-    end
-
-    API --> FastAPI
-    FastAPI --> Service
-    Service --> MongoDB
-    FastAPI --> Scheduler
-    Scheduler --> Service
-    FastAPI --> Monitor
-    Monitor --> MongoDB
-
-    Handlers -.-> FastAPI
-    Validation -.-> FastAPI
-    Retry -.-> Service
-    Error -.-> Service
-    Indexes -.-> MongoDB
-    Snapshots -.-> MongoDB
-
-    classDef external fill:#ffebee,stroke:#f44336,color:#c62828
-    classDef app fill:#f3e5f5,stroke:#9c27b0,color:#6a1b9a
-    classDef business fill:#e8f5e8,stroke:#4caf50,color:#2e7d32
-    classDef data fill:#fff3e0,stroke:#ff9800,color:#e65100
-
-    class API external
-    class FastAPI,Handlers,Validation app
-    class Service,Retry,Error,Scheduler,Monitor business
-    class MongoDB,Indexes,Snapshots data
-```
+Key Features:
+- Async/await for high-performance concurrent operations
+- Exponential backoff retry mechanism for resilience
+- Structured error handling with custom exception hierarchy
+- Scheduled data collection using cron expressions
 
 ## 🛠️ Tech Stack
 
