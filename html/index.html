@@ -422,13 +422,12 @@
         <p>
           PIX Historial tracks and analyzes BRL/ARS exchange rates from multiple
           financial apps. Collects data every 15 minutes to provide historical
-          insights and price variance analysis for Brazil's instant payment system.
+          insights and price variance analysis for Brazil's instant payment
+          system.
         </p>
         <div>
           <a href="#documentation" class="cta-button">Get Started</a>
-          <a href="/docs" class="cta-button cta-secondary"
-            >View API Docs</a
-          >
+          <a href="/docs" class="cta-button cta-secondary">View API Docs</a>
         </div>
       </div>
     </section>
@@ -457,6 +456,10 @@
             <div class="stat-label">Backend</div>
           </div>
           <div class="stat">
+            <div class="stat-number">85%</div>
+            <div class="stat-label">Test Coverage</div>
+          </div>
+          <div class="stat">
             <div class="stat-number">REST</div>
             <div class="stat-label">API</div>
           </div>
@@ -471,7 +474,8 @@
           <h2>Everything you need to track BRL/ARS rates</h2>
           <p class="section-description">
             Comprehensive tools and endpoints for monitoring, analyzing, and
-            understanding BRL/ARS exchange rate variations across different platforms.
+            understanding BRL/ARS exchange rate variations across different
+            platforms.
           </p>
         </div>
 
@@ -480,8 +484,8 @@
             <div class="feature-icon">⏰</div>
             <h3>Automated Collection</h3>
             <p>
-              Fetches BRL/ARS rates every 15 minutes from multiple financial apps
-              for continuous monitoring and up-to-date information.
+              Fetches BRL/ARS rates every 15 minutes from multiple financial
+              apps for continuous monitoring and up-to-date information.
             </p>
           </div>
           <div class="feature-card">
@@ -496,8 +500,8 @@
             <div class="feature-icon">🌐</div>
             <h3>Multi-App Support</h3>
             <p>
-              Compare rates across different financial applications to find the best
-              exchange rates and optimize your conversions.
+              Compare rates across different financial applications to find the
+              best exchange rates and optimize your conversions.
             </p>
           </div>
           <div class="feature-card">
@@ -509,19 +513,19 @@
             </p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">📈</div>
-            <h3>Variance Tracking</h3>
-            <p>
-              Monitor price variations and identify optimal timing for exchanges
-              with comprehensive analytics.
-            </p>
-          </div>
-          <div class="feature-card">
             <div class="feature-icon">🔒</div>
             <h3>Secure & Reliable</h3>
             <p>
-              Enterprise-grade security with robust error handling and
-              encrypted data transmission.
+              Enterprise-grade reliability with robust error handling, rate
+              limiting, and request correlation tracking.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>Request Tracking</h3>
+            <p>
+              Correlation IDs for end-to-end request tracking and debugging
+              across the entire system.
             </p>
           </div>
         </div>
@@ -581,8 +585,8 @@ curl -X GET http://localhost:8000/pix-historial/apps/app1?hours=24 \
           <div class="section-label">API Reference</div>
           <h2>Available Endpoints</h2>
           <p class="section-description">
-            Complete list of API endpoints for accessing BRL/ARS exchange rate data and
-            analytics.
+            Complete list of API endpoints for accessing BRL/ARS exchange rate
+            data and analytics.
           </p>
         </div>
 
@@ -593,7 +597,8 @@ curl -X GET http://localhost:8000/pix-historial/apps/app1?hours=24 \
               <span class="endpoint-path">/latest</span>
             </div>
             <p class="endpoint-description">
-              Get the most recent BRL/ARS quote snapshot across all monitored apps.
+              Get the most recent BRL/ARS quote snapshot across all monitored
+              apps.
             </p>
           </div>
 
@@ -603,7 +608,8 @@ curl -X GET http://localhost:8000/pix-historial/apps/app1?hours=24 \
               <span class="endpoint-path">/apps/{app_name}</span>
             </div>
             <p class="endpoint-description">
-              Get rate history for a specific app with time range filtering (hours parameter: 1-168, default: 24).
+              Get rate history for a specific app with time range filtering
+              (hours parameter: 1-168, default: 24).
             </p>
           </div>
 
@@ -613,7 +619,8 @@ curl -X GET http://localhost:8000/pix-historial/apps/app1?hours=24 \
               <span class="endpoint-path">/health</span>
             </div>
             <p class="endpoint-description">
-              Check application and database health status with uptime and ping information.
+              Check application and database health status with uptime and ping
+              information.
             </p>
           </div>
         </div>
@@ -622,10 +629,45 @@ curl -X GET http://localhost:8000/pix-historial/apps/app1?hours=24 \
 
     <footer id="contact">
       <div class="container">
-        <div style="display: flex; justify-content: center; align-items: center; gap: 32px; margin-bottom: 24px;">
-          <a href="https://github.com/Giygas/pix-historial" style="color: #666; text-decoration: none; font-size: 14px; transition: color 0.2s;">GitHub</a>
-          <a href="https://www.linkedin.com/in/gustavorossich/" style="color: #666; text-decoration: none; font-size: 14px; transition: color 0.2s;">LinkedIn</a>
-          <a href="mailto:gustavorossich@outlook.com" style="color: #666; text-decoration: none; font-size: 14px; transition: color 0.2s;">Email</a>
+        <div
+          style="
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 32px;
+            margin-bottom: 24px;
+          "
+        >
+          <a
+            href="https://github.com/Giygas/pix-historial"
+            style="
+              color: #666;
+              text-decoration: none;
+              font-size: 14px;
+              transition: color 0.2s;
+            "
+            >GitHub</a
+          >
+          <a
+            href="https://www.linkedin.com/in/gustavorossich/"
+            style="
+              color: #666;
+              text-decoration: none;
+              font-size: 14px;
+              transition: color 0.2s;
+            "
+            >LinkedIn</a
+          >
+          <a
+            href="mailto:gustavorossich@outlook.com"
+            style="
+              color: #666;
+              text-decoration: none;
+              font-size: 14px;
+              transition: color 0.2s;
+            "
+            >Email</a
+          >
         </div>
         <div class="footer-bottom">
           <p>&copy; 2025 PIX Historial. All rights reserved.</p>

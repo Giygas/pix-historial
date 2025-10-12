@@ -60,13 +60,16 @@ Key Features:
 - **Exponential Backoff** - Intelligent retry mechanism with jitter
 - **Custom Exception Hierarchy** - Structured error handling
 - **Circuit Breaker Pattern** - Resilience against external API failures
+- **Request Correlation IDs** - Track requests across the entire system for better debugging
+- **Rate Limiting** - Prevent API abuse with configurable IP-based limits (100 req/60s default)
 
 ### Development & Testing
 
 - **Pytest 8.3+** - Testing framework with async support
-- **80% Test Coverage** - Comprehensive test suite
-- **Code Quality Tools** - Black, Ruff, Pylint, MyPy
+- **85% Test Coverage** - Comprehensive test suite (102 tests passing)
+- **Code Quality Tools** - Black, Ruff, Pylint, MyPy with strict type checking
 - **Pre-commit Hooks** - Automated code quality checks
+- **Static Type Checking** - MyPy with comprehensive type hints for all functions
 
 ### Deployment & CI/CD
 
@@ -145,6 +148,14 @@ COLLECTION_CRON="*/15"  # Cron expression: "*/15" = every 15 minutes at :00, :15
 # API Settings
 API_TITLE="PIX Historial API"
 API_VERSION=1.0.0
+
+# Rate Limiting
+ENABLE_RATE_LIMITING=true
+RATE_LIMIT_REQUESTS=100
+RATE_LIMIT_WINDOW=60
+
+# Correlation IDs
+ENABLE_CORRELATION_IDS=true
 ```
 
 ### ⏰ Scheduling Configuration
@@ -322,9 +333,10 @@ python -m pytest tests/test_api_simple.py -v
 
 ### Test Coverage
 
-- **Overall Coverage**: 80%
-- **Tests Passing**: 42/42 (100%)
+- **Overall Coverage**: 85%
+- **Tests Passing**: 102/102 (100%)
 - **Coverage Report**: `htmlcov/index.html`
+- **Zero Warnings**: Clean pytest run with no deprecation warnings
 
 ## 🔧 Error Handling
 
@@ -341,6 +353,7 @@ The application implements comprehensive error handling with structured response
   },
   "timestamp": "2024-01-15T10:30:00Z",
   "request_id": "req_123456",
+  "correlation_id": "550e8400-e29b-41d4-a716-446655440000",
   "path": "/latest"
 }
 ```
@@ -352,6 +365,7 @@ The application implements comprehensive error handling with structured response
 - `QuoteDatabaseError` - Database operation failures
 - `QuoteDataValidationError` - Data validation issues
 - `QuoteDataParsingError` - Response parsing errors
+- `RateLimitExceededError` - API rate limit exceeded (429 status)
 
 ### Retry Mechanism
 
@@ -368,13 +382,16 @@ The application implements comprehensive error handling with structured response
 - API response time monitoring
 - Background task status
 - System uptime tracking
+- Request correlation tracking
+- Rate limit monitoring
 
 ### Logging
 
 - Structured JSON logging
 - Different log levels for different environments
-- Request correlation IDs
+- Request correlation IDs for end-to-end request tracking
 - Error context preservation
+- Request lifecycle logging
 
 ### Metrics
 
@@ -382,6 +399,8 @@ The application implements comprehensive error handling with structured response
 - API response times
 - Error rates by type
 - Background task success rates
+- Rate limit hit rates
+- Request correlation tracking effectiveness
 
 ## 🚀 Deployment
 
@@ -482,18 +501,23 @@ pix-historial/
 │   ├── services.py      # Business logic
 │   ├── exceptions.py    # Custom exceptions
 │   ├── utils.py         # Utility functions
-│   └── logger.py        # Logging configuration
+│   ├── logger.py        # Logging configuration
+│   ├── correlation.py   # Request correlation ID middleware
+│   └── rate_limiter.py  # Rate limiting middleware
 ├── tests/
 │   ├── __init__.py
 │   ├── conftest.py      # Test configuration
 │   ├── test_api.py      # API endpoint tests
 │   ├── test_models.py   # Model validation tests
-│   └── test_services.py # Service layer tests
+│   ├── test_services.py # Service layer tests
+│   ├── test_correlation.py # Correlation ID tests
+│   └── test_rate_limiter.py # Rate limiting tests
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml   # CI/CD pipeline
 ├── requirements.txt     # Python dependencies
-├── pytest.ini         # Test configuration
+├── pyproject.toml      # Project configuration with pytest settings
+├── mypy.ini           # MyPy type checking configuration
 ├── .env.example       # Environment template
 ├── .gitignore         # Git ignore rules
 └── README.md          # This file
@@ -503,9 +527,10 @@ pix-historial/
 
 - Environment variables for sensitive configuration
 - Input validation on all API endpoints
-- Rate limiting considerations
+- Rate limiting with configurable limits
 - Error message sanitization
 - Request correlation IDs for audit trails
+- IP-based tracking for abuse prevention
 
 ## 📄 License
 
