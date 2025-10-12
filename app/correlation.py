@@ -1,10 +1,9 @@
 """Request correlation ID middleware for better debugging and monitoring."""
 
 import uuid
-from typing import Callable, Any
 
 from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from app.config import settings
 from app.logger import logger
@@ -22,7 +21,9 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
     5. Adds correlation ID to logging context
     """
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         # Skip correlation ID processing if disabled
         if not settings.ENABLE_CORRELATION_IDS:
             return await call_next(request)

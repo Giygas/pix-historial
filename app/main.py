@@ -291,11 +291,9 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 
     # Handle rate limit exceptions
     if exc.status_code == 429:
-        detail_dict: Dict[str, Any] = {}
-        if isinstance(exc.detail, dict):
-            detail_dict = exc.detail
-        else:
-            detail_dict = {"message": str(exc.detail)}
+        # For rate limit errors, detail is typically a string message
+        message = str(exc.detail)
+        detail_dict: Dict[str, Any] = {"message": message}
 
         return JSONResponse(
             status_code=exc.status_code,
@@ -315,38 +313,6 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
             message=str(exc.detail),
             path=str(request.url.path),
             request_id=correlation_id,
-        ).model_dump(),
-    )
-
-    # Handle rate limit exceptions
-    if exc.status_code == 429:
-        detail = (
-            exc.detail if isinstance(exc.detail, dict) else {"message": str(exc.detail)}
-        )
-        return JSONResponse(
-            status_code=exc.status_code,
-            content=ErrorResponse(
-                error="RateLimitExceeded",
-                message=detail.get("message", "Too many requests"),
-                details=detail,
-                path=str(request.url.path),
-                request_id=request.headers.get("X-Request-ID"),
-            ).model_dump(),
-            headers={
-                "Retry-After": str(detail.get("retry_after", 60)),
-                "X-RateLimit-Limit": str(detail.get("limit", 100)),
-                "X-RateLimit-Remaining": str(detail.get("remaining", 0)),
-                "X-RateLimit-Window": str(detail.get("window", 60)),
-            },
-        )
-
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=ErrorResponse(
-            error="HTTPException",
-            message=str(exc.detail),
-            path=str(request.url.path),
-            request_id=request.headers.get("X-Request-ID"),
         ).model_dump(),
     )
 
