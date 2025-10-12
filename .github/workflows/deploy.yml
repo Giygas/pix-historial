@@ -1,4 +1,8 @@
-name: Deploy to Server
+# DEPRECATED: This workflow has been replaced by ci.yml
+# The new CI/CD pipeline includes comprehensive testing, security scanning, and safe deployment
+# Please use .github/workflows/ci.yml instead
+
+name: Legacy Deploy (Deprecated)
 
 on:
   push:
@@ -7,24 +11,18 @@ on:
 
 jobs:
   deploy:
-    name: Deploy app
+    name: Legacy Deploy (Not Recommended)
     runs-on: ubuntu-latest
+    if: false  # Disable this workflow
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
-
-      - name: Deploy over SSH
+      - name: Warning
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_ADRESS }} << 'EOF'
-            cd ${{ secrets.APP_LOCATION }}
-            git pull origin main
-            source venv/bin/activate
-            pip install -r requirements.txt
-            sudo systemctl restart pix-historial
-          EOF
+          echo "⚠️  This workflow is deprecated and disabled."
+          echo "🔄 Please use the new CI/CD pipeline in .github/workflows/ci.yml"
+          echo "📋 The new pipeline includes:"
+          echo "   - Comprehensive testing (102 tests)"
+          echo "   - Code quality checks (ruff, black, mypy)"
+          echo "   - Security scanning (bandit, safety, trivy)"
+          echo "   - Safe deployment with health checks"
+          echo "   - Automatic rollback on failure"
