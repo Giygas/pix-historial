@@ -7,6 +7,7 @@ from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
 from app.config import settings
@@ -30,6 +31,7 @@ from app.models import (
     SnapshotResponse,
     ValidationErrorResponse,
 )
+from app.rate_limiter import rate_limit_middleware
 from app.services import collect_quotes_background
 
 # from app.services import QuoteService, collect_quotes_background
@@ -90,6 +92,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Add rate limiting middleware
+app.add_middleware(BaseHTTPMiddleware, dispatch=rate_limit_middleware)
 
 
 # Exception Handlers for Structured Error Responses
@@ -251,6 +256,28 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
                 path=str(request.url.path),
                 request_id=request.headers.get("X-Request-ID"),
             ).model_dump(),
+        )
+
+    # Handle rate limit exceptions
+    if exc.status_code == 429:
+        detail = (
+            exc.detail if isinstance(exc.detail, dict) else {"message": str(exc.detail)}
+        )
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=ErrorResponse(
+                error="RateLimitExceeded",
+                message=detail.get("message", "Too many requests"),
+                details=detail,
+                path=str(request.url.path),
+                request_id=request.headers.get("X-Request-ID"),
+            ).model_dump(),
+            headers={
+                "Retry-After": str(detail.get("retry_after", 60)),
+                "X-RateLimit-Limit": str(detail.get("limit", 100)),
+                "X-RateLimit-Remaining": str(detail.get("remaining", 0)),
+                "X-RateLimit-Window": str(detail.get("window", 60)),
+            },
         )
 
     return JSONResponse(
