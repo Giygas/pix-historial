@@ -30,7 +30,7 @@ def setup_logger() -> logging.Logger:
     logs_dir = Path("logs")
     logs_dir.mkdir(exist_ok=True)
 
-    # Custom formatter
+    # Custom formatter with correlation ID support
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s"
     )

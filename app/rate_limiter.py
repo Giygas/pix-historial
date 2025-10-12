@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Callable, Dict, List
 
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Request, Response
 from starlette.status import HTTP_429_TOO_MANY_REQUESTS
 
 from app.config import settings
@@ -11,7 +11,7 @@ from app.logger import logger
 class InMemoryRateLimiter:
     """In-memory rate limiter using sliding window algorithm"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.requests: Dict[str, List[datetime]] = {}
 
     def is_allowed(self, key: str) -> bool:
@@ -56,7 +56,7 @@ class InMemoryRateLimiter:
 rate_limiter = InMemoryRateLimiter()
 
 
-async def rate_limit_middleware(request: Request, call_next):
+async def rate_limit_middleware(request: Request, call_next: Callable) -> Response:
     """Rate limiting middleware"""
     # Get client IP
     client_ip = request.client.host if request.client else "unknown"
@@ -80,7 +80,7 @@ async def rate_limit_middleware(request: Request, call_next):
         )
 
     # Process request
-    response = await call_next(request)
+    response: Response = await call_next(request)
 
     # Add rate limit headers
     remaining = rate_limiter.get_remaining_requests(client_ip)

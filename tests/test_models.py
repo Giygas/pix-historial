@@ -3,17 +3,9 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from app.models import (
-    ApiResponse,
-    AppHistoryResponse,
-    AppRate,
-    Exchange,
-    HealthCheckResponse,
-    HistoryElement,
-    Quote,
-    QuoteSnapshot,
-    SnapshotResponse,
-)
+from app.models import (ApiResponse, AppHistoryResponse, AppRate, Exchange,
+                        HealthCheckResponse, HistoryElement, Quote,
+                        QuoteSnapshot, SnapshotResponse)
 
 
 class TestQuote:

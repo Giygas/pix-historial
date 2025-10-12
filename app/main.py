@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator, Dict
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -11,6 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
 from app.config import settings
+from app.correlation import CorrelationIDMiddleware, get_correlation_id
 from app.database import tracker
 from app.exceptions import (
     QuoteAPIConnectionError,
@@ -93,6 +94,12 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+# Add correlation ID middleware (should be first to capture all requests)
+app.add_middleware(CorrelationIDMiddleware)
+
+# Note: rate_limit_middleware is a function, not a class middleware
+# It will be added as a route-specific middleware or converted to class later
+
 # Add rate limiting middleware
 app.add_middleware(BaseHTTPMiddleware, dispatch=rate_limit_middleware)
 
@@ -103,7 +110,10 @@ async def quote_service_exception_handler(
     request: Request, exc: QuoteServiceError
 ) -> JSONResponse:
     """Handle all custom quote service exceptions."""
-    logger.error(f"QuoteServiceError in {request.url.path}: {exc.message}")
+    correlation_id = get_correlation_id(request)
+    logger.error(
+        f"[{correlation_id}] QuoteServiceError in {request.url.path}: {exc.message}"
+    )
 
     return JSONResponse(
         status_code=HTTP_500_INTERNAL_SERVER_ERROR,
@@ -112,7 +122,7 @@ async def quote_service_exception_handler(
             message=exc.message,
             details=exc.details,
             path=str(request.url.path),
-            request_id=request.headers.get("X-Request-ID"),
+            request_id=correlation_id,
         ).model_dump(),
     )
 
@@ -122,7 +132,10 @@ async def api_connection_error_handler(
     request: Request, exc: QuoteAPIConnectionError
 ) -> JSONResponse:
     """Handle API connection errors with specific status code."""
-    logger.error(f"API connection error in {request.url.path}: {exc.message}")
+    correlation_id = get_correlation_id(request)
+    logger.error(
+        f"[{correlation_id}] API connection error in {request.url.path}: {exc.message}"
+    )
 
     return JSONResponse(
         status_code=503,  # Service Unavailable
@@ -131,7 +144,7 @@ async def api_connection_error_handler(
             message="External API service is currently unavailable",
             details=exc.details,
             path=str(request.url.path),
-            request_id=request.headers.get("X-Request-ID"),
+            request_id=correlation_id,
         ).model_dump(),
     )
 
@@ -141,7 +154,10 @@ async def api_timeout_error_handler(
     request: Request, exc: QuoteAPITimeoutError
 ) -> JSONResponse:
     """Handle API timeout errors with specific status code."""
-    logger.warning(f"API timeout in {request.url.path}: {exc.message}")
+    correlation_id = get_correlation_id(request)
+    logger.warning(
+        f"[{correlation_id}] API timeout in {request.url.path}: {exc.message}"
+    )
 
     return JSONResponse(
         status_code=408,  # Request Timeout
@@ -150,7 +166,7 @@ async def api_timeout_error_handler(
             message="External API request timed out",
             details=exc.details,
             path=str(request.url.path),
-            request_id=request.headers.get("X-Request-ID"),
+            request_id=correlation_id,
         ).model_dump(),
     )
 
@@ -160,7 +176,10 @@ async def database_error_handler(
     request: Request, exc: QuoteDatabaseError
 ) -> JSONResponse:
     """Handle database errors with specific status code."""
-    logger.error(f"Database error in {request.url.path}: {exc.message}")
+    correlation_id = get_correlation_id(request)
+    logger.error(
+        f"[{correlation_id}] Database error in {request.url.path}: {exc.message}"
+    )
 
     return JSONResponse(
         status_code=503,  # Service Unavailable
@@ -169,7 +188,7 @@ async def database_error_handler(
             message="Database service is currently unavailable",
             details=exc.details,
             path=str(request.url.path),
-            request_id=request.headers.get("X-Request-ID"),
+            request_id=correlation_id,
         ).model_dump(),
     )
 
@@ -179,7 +198,10 @@ async def validation_error_handler(
     request: Request, exc: QuoteDataValidationError
 ) -> JSONResponse:
     """Handle data validation errors."""
-    logger.warning(f"Validation error in {request.url.path}: {exc.message}")
+    correlation_id = get_correlation_id(request)
+    logger.warning(
+        f"[{correlation_id}] Validation error in {request.url.path}: {exc.message}"
+    )
 
     return JSONResponse(
         status_code=422,  # Unprocessable Entity
@@ -188,7 +210,7 @@ async def validation_error_handler(
             message="Data validation failed",
             details=exc.details,
             path=str(request.url.path),
-            request_id=request.headers.get("X-Request-ID"),
+            request_id=correlation_id,
         ).model_dump(),
     )
 
@@ -198,7 +220,10 @@ async def parsing_error_handler(
     request: Request, exc: QuoteDataParsingError
 ) -> JSONResponse:
     """Handle data parsing errors."""
-    logger.error(f"Data parsing error in {request.url.path}: {exc.message}")
+    correlation_id = get_correlation_id(request)
+    logger.error(
+        f"[{correlation_id}] Data parsing error in {request.url.path}: {exc.message}"
+    )
 
     return JSONResponse(
         status_code=502,  # Bad Gateway
@@ -207,7 +232,7 @@ async def parsing_error_handler(
             message="Failed to parse external API response",
             details=exc.details,
             path=str(request.url.path),
-            request_id=request.headers.get("X-Request-ID"),
+            request_id=correlation_id,
         ).model_dump(),
     )
 
@@ -217,7 +242,10 @@ async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
     """Handle FastAPI/Pydantic validation errors with structured format."""
-    logger.warning(f"Validation error in {request.url.path}: {exc.errors()}")
+    correlation_id = get_correlation_id(request)
+    logger.warning(
+        f"[{correlation_id}] Validation error in {request.url.path}: {exc.errors()}"
+    )
 
     # Convert FastAPI validation errors to our format
     validation_errors = []
@@ -237,7 +265,7 @@ async def validation_exception_handler(
             message="Input validation failed",
             validation_errors=validation_errors,
             path=str(request.url.path),
-            request_id=request.headers.get("X-Request-ID"),
+            request_id=correlation_id,
         ).model_dump(),
     )
 
@@ -245,7 +273,10 @@ async def validation_exception_handler(
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """Handle FastAPI HTTPExceptions with structured format."""
-    logger.warning(f"HTTPException in {request.url.path}: {exc.detail}")
+    correlation_id = get_correlation_id(request)
+    logger.warning(
+        f"[{correlation_id}] HTTPException in {request.url.path}: {exc.detail}"
+    )
 
     if exc.status_code == HTTP_404_NOT_FOUND:
         return JSONResponse(
@@ -254,9 +285,38 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
                 error="NotFound",
                 message=str(exc.detail),
                 path=str(request.url.path),
-                request_id=request.headers.get("X-Request-ID"),
+                request_id=correlation_id,
             ).model_dump(),
         )
+
+    # Handle rate limit exceptions
+    if exc.status_code == 429:
+        detail_dict: Dict[str, Any] = {}
+        if isinstance(exc.detail, dict):
+            detail_dict = exc.detail
+        else:
+            detail_dict = {"message": str(exc.detail)}
+
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=ErrorResponse(
+                error="RateLimitExceeded",
+                message=detail_dict.get("message", "Too many requests"),
+                details=detail_dict,
+                path=str(request.url.path),
+                request_id=correlation_id,
+            ).model_dump(),
+        )
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error="HTTPException",
+            message=str(exc.detail),
+            path=str(request.url.path),
+            request_id=correlation_id,
+        ).model_dump(),
+    )
 
     # Handle rate limit exceptions
     if exc.status_code == 429:

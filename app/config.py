@@ -19,5 +19,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_REQUESTS: int = Field(default=100)  # Number of requests
     RATE_LIMIT_WINDOW: int = Field(default=60)  # Time window in seconds
 
+    # Correlation ID settings
+    ENABLE_CORRELATION_IDS: bool = Field(default=True)  # Enable request correlation IDs
+
 
 settings = Settings()  # type: ignore[call-arg]
