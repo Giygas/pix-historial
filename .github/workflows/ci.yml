@@ -178,101 +178,12 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.DEPLOY_KEY }}
 
-      - name: Add server to known hosts
+      - name: Deploy over SSH
         run: |
-          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Deploy with health checks
-        run: |
-          ssh ${{ secrets.SERVER_USER }}@${ secrets.SERVER_HOST }} << 'EOF'
-            set -e  # Exit on any error
-            set -u  # Treat unset variables as error
-            
-            echo "🚀 Starting deployment..."
-            
-            # Navigate to application directory
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_ADRESS }} << 'EOF'
             cd ${{ secrets.APP_LOCATION }}
-            
-            # Create backup of current version
-            BACKUP_DIR="../backup-$(date +%Y%m%d-%H%M%S)"
-            echo "📦 Creating backup in $BACKUP_DIR"
-            cp -r . "$BACKUP_DIR" || true
-            
-            # Pull latest changes
-            echo "📥 Pulling latest changes..."
             git pull origin main
-            
-            # Activate virtual environment and install dependencies
-            echo "🔧 Installing dependencies..."
             source venv/bin/activate
             pip install -r requirements.txt
-            
-            # Run any database migrations if needed
-            # echo "🗄️ Running database migrations..."
-            # python -m app.database migrate || true
-            
-            # Restart the service
-            echo "🔄 Restarting service..."
             sudo systemctl restart pix-historial
-            
-            # Wait for service to start
-            echo "⏳ Waiting for service to start..."
-            sleep 10
-            
-            # Health check
-            echo "🏥 Running health check..."
-            HEALTH_URL="http://localhost:8001/health"
-            MAX_ATTEMPTS=30
-            ATTEMPT=1
-            
-            while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
-              if curl -f -s "$HEALTH_URL" > /dev/null; then
-                echo "✅ Health check passed!"
-                echo "🎉 Deployment successful!"
-                exit 0
-              fi
-              
-              echo "⏳ Health check attempt $ATTEMPT/$MAX_ATTEMPTS failed, retrying in 2 seconds..."
-              sleep 2
-              ATTEMPT=$((ATTEMPT + 1))
-            done
-            
-            echo "❌ Health check failed after $MAX_ATTEMPTS attempts!"
-            echo "🔄 Rolling back to backup..."
-            
-            # Rollback
-            sudo systemctl stop pix-historial
-            rm -rf ./*
-            cp -r "$BACKUP_DIR"/* ./
-            sudo systemctl start pix-historial
-            
-            echo "🔄 Rollback completed"
-            exit 1
           EOF
-
-      - name: Verify deployment
-        run: |
-          echo "🔍 Verifying deployment..."
-          sleep 15
-          
-          # Check if the application is responding
-          if curl -f -s "http://${{ secrets.SERVER_HOST }}:8001/health" > /dev/null; then
-            echo "✅ Production deployment verified!"
-          else
-            echo "❌ Production deployment verification failed!"
-            exit 1
-          fi
-
-      - name: Notify deployment status
-        if: always()
-        run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "🎉 Production deployment completed successfully!"
-            echo "📊 Deployment metrics:"
-            echo "  - Commit: ${GITHUB_SHA}"
-            echo "  - Branch: ${GITHUB_REF_NAME}"
-            echo "  - Timestamp: $(date -u)"
-          else
-            echo "❌ Production deployment failed!"
-            echo "🔧 Please check the logs and investigate the issue."
-          fi
