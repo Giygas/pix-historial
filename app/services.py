@@ -3,8 +3,11 @@ from datetime import datetime, timezone
 import requests
 from requests.exceptions import ConnectionError, RequestException, Timeout
 
-from app.exceptions import (QuoteAPIConnectionError, QuoteAPITimeoutError,
-                            QuoteDataParsingError)
+from app.exceptions import (
+    QuoteAPIConnectionError,
+    QuoteAPITimeoutError,
+    QuoteDataParsingError,
+)
 from app.logger import logger
 from app.utils import RetryConfig, retry_with_backoff
 

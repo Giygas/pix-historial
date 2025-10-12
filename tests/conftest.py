@@ -64,12 +64,14 @@ def sample_quote_snapshot():
 @pytest.fixture
 def mock_tracker():
     """Mock QuoteTracker for testing"""
-    with patch("app.database.tracker") as mock:
-        mock.get_latest_snapshot = AsyncMock()
-        mock.get_app_history = AsyncMock()
-        mock.save_snapshot = AsyncMock()
-        mock.get_mongo_ping_time = Mock(return_value=5.5)
-        yield mock
+    with patch("app.database.get_tracker") as mock_get_tracker:
+        mock_tracker = AsyncMock()
+        mock_tracker.get_latest_snapshot = AsyncMock()
+        mock_tracker.get_app_history = AsyncMock()
+        mock_tracker.save_snapshot = AsyncMock()
+        mock_tracker.get_mongo_ping_time = Mock(return_value=5.5)
+        mock_get_tracker.return_value = mock_tracker
+        yield mock_tracker
 
 
 @pytest.fixture

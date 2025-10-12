@@ -20,3 +20,10 @@ markers = [
     "slow: Slow tests",
     "asyncio: Async tests"
 ]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["app"]
+known_third_party = ["fastapi", "pydantic", "motor", "apscheduler", "pytest"]

@@ -54,6 +54,7 @@ whatthepatch==1.0.7
 yapf==0.43.0
 zipp==3.23.0
 slowapi==0.1.9
+types-requests==2.32.0.20241016
 
 # Testing dependencies
 pytest==8.3.4

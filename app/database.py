@@ -99,4 +99,25 @@ class QuoteTracker:
         return round((end - start) * 1000, 2)  # milliseconds
 
 
-tracker = QuoteTracker()
+# Global tracker instance (lazy initialization)
+_tracker: Optional[QuoteTracker] = None
+
+
+def get_tracker() -> QuoteTracker:
+    """Get the global tracker instance (lazy initialization)"""
+    global _tracker
+    if _tracker is None:
+        _tracker = QuoteTracker()
+    return _tracker
+
+
+# For backward compatibility, use a property-like access
+class _TrackerProxy:
+    """Proxy for lazy tracker initialization"""
+
+    def __getattr__(self, name: str):
+        return getattr(get_tracker(), name)
+
+
+# Create proxy instance
+tracker = _TrackerProxy()
