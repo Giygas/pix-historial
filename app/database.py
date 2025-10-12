@@ -11,14 +11,14 @@ from .models import ApiResponse, Exchange, HistoryElement, QuoteSnapshot
 
 
 class QuoteTracker:
-    def __init__(self):
-        self.client = MongoClient(settings.MONGO_URI)
+    def __init__(self) -> None:
+        self.client: MongoClient = MongoClient(settings.MONGO_URI)
         self.db: Database = self.client[settings.DB_NAME]
         self.collection: Collection = self.db.snapshots
 
         self.createIndexes()
 
-    def createIndexes(self):
+    def createIndexes(self) -> None:
         """Create indexes for faster query time"""
         # Index for time-based queries
         self.collection.create_index([("timestamp", DESCENDING)])
@@ -85,7 +85,9 @@ class QuoteTracker:
         for snapshot in snapshots:
             if app_name in snapshot.quotes:
                 history.append(
-                    {"timestamp": snapshot.timestamp, "rate": snapshot.quotes[app_name]}
+                    HistoryElement(
+                        timestamp=snapshot.timestamp, rate=snapshot.quotes[app_name]
+                    )
                 )
 
         return history

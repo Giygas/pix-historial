@@ -1,11 +1,12 @@
+from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from datetime import datetime, timezone, timedelta
-from unittest.mock import Mock, AsyncMock, patch
 from pymongo.collection import Collection
 from pymongo.database import Database
 
 from app.database import QuoteTracker
-from app.models import QuoteSnapshot, Exchange, Quote
+from app.models import Exchange, Quote, QuoteSnapshot
 
 
 class TestQuoteTracker:
@@ -198,8 +199,10 @@ class TestQuoteTracker:
         history = await tracker_instance.get_app_history(app_name, hours)
 
         assert len(history) == 4
-        assert all("timestamp" in item and "rate" in item for item in history)
-        assert all(item["rate"] > 0 for item in history)
+        assert all(
+            hasattr(item, "timestamp") and hasattr(item, "rate") for item in history
+        )
+        assert all(item.rate > 0 for item in history)
 
         # Verify get_snapshots_since was called with correct time range
         tracker_instance.get_snapshots_since.assert_called_once()
@@ -280,4 +283,4 @@ class TestQuoteTrackerIntegration:
         tracker_instance.get_snapshots_since = AsyncMock(return_value=[latest])
         history = await tracker_instance.get_app_history("app1", 24)
         assert len(history) == 1
-        assert history[0]["rate"] == 1850.5
+        assert history[0].rate == 1850.5

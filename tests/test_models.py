@@ -1,17 +1,18 @@
-import pytest
 from datetime import datetime, timezone
+
+import pytest
 from pydantic import ValidationError
 
 from app.models import (
-    Quote,
-    Exchange,
     ApiResponse,
-    QuoteSnapshot,
-    AppRate,
-    SnapshotResponse,
-    HistoryElement,
     AppHistoryResponse,
+    AppRate,
+    Exchange,
     HealthCheckResponse,
+    HistoryElement,
+    Quote,
+    QuoteSnapshot,
+    SnapshotResponse,
 )
 
 

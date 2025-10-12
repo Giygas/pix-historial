@@ -1,7 +1,8 @@
-import pytest
 import asyncio
-from datetime import datetime, timezone, timedelta
-from unittest.mock import Mock, AsyncMock, patch
+from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 from pymongo import MongoClient
 
 from app.database import QuoteTracker

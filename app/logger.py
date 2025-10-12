@@ -1,11 +1,11 @@
 import logging
-import sys
 import os
+import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 
-def setup_logger():
+def setup_logger() -> logging.Logger:
     """Setup logger with environment-aware configuration"""
     # Check if we're in test mode
     is_test_mode = (

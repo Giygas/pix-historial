@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
+from typing import AsyncGenerator
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -41,7 +42,7 @@ app_start_time = datetime.now(timezone.utc)
 
 
 @asynccontextmanager
-async def lifespan_with_scheduler(app: FastAPI):
+async def lifespan_with_scheduler(app: FastAPI) -> AsyncGenerator[None, None]:
     """Scheduler setup"""
     try:
         # Configure scheduler with better defaults
@@ -264,13 +265,13 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 
 
 @app.get("/")
-async def root():
+async def root() -> FileResponse:
     """Root endpoint - serve HTML documentation"""
     return FileResponse("html/index.html", media_type="text/html")
 
 
 @app.get("/latest", response_model=SnapshotResponse)
-async def get_latest():
+async def get_latest() -> SnapshotResponse:
     """Get the most recent quote snapshot"""
     latest = await tracker.get_latest_snapshot()
 
@@ -289,7 +290,7 @@ async def get_latest():
 async def app_history(
     app_name: str,
     hours: int = Query(default=24, ge=1, le=720),  # 1 hour to 1 month
-):
+) -> AppHistoryResponse:
     """Get rate history for a specific app"""
     history = await tracker.get_app_history(app_name, hours)
 
@@ -317,13 +318,13 @@ async def app_history(
 
 
 @app.get("/favicon.ico", include_in_schema=False)
-async def favicon():
+async def favicon() -> FileResponse:
     """Serve the favicon"""
     return FileResponse("favicon.ico", media_type="image/x-icon")
 
 
 @app.get("/health", response_model=HealthCheckResponse)
-async def health_check():
+async def health_check() -> dict[str, object]:
     """Health check endpoint"""
     try:
         latest = await tracker.get_latest_snapshot()

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field, RootModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
 # API Response Models
@@ -24,8 +24,8 @@ class Exchange(BaseModel):
 class ApiResponse(RootModel[Dict[str, Exchange]]):
     root: Dict[str, Exchange]
 
-    def items(self):
-        return self.root.items()
+    def items(self) -> list[tuple[str, Exchange]]:
+        return list(self.root.items())
 
 
 # Database Models
@@ -92,7 +92,7 @@ class ErrorResponse(BaseModel):
     )
     path: Optional[str] = Field(default=None, description="API endpoint path")
 
-    def model_dump(self, **kwargs) -> Dict[str, Any]:
+    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
         """Override model_dump to handle datetime serialization."""
         data = super().model_dump(**kwargs)
         if "timestamp" in data and isinstance(data["timestamp"], datetime):

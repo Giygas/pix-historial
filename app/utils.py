@@ -3,7 +3,7 @@
 import asyncio
 import time
 from functools import wraps
-from typing import Callable, Optional, Tuple, Type, Any
+from typing import Any, Callable, Optional, Tuple, Type
 
 from app.logger import logger
 
@@ -15,7 +15,7 @@ def retry_with_backoff(
     exceptions: Tuple[Type[Exception], ...] = (Exception,),
     backoff_factor: float = 2.0,
     jitter: bool = True,
-):
+) -> Callable:
     """
     Decorator for retrying functions with exponential backoff.
 
@@ -30,7 +30,7 @@ def retry_with_backoff(
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def async_wrapper(*args, **kwargs) -> Any:
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
             last_exception: Optional[Exception] = None
 
             for attempt in range(max_attempts):
@@ -68,7 +68,7 @@ def retry_with_backoff(
                 raise RuntimeError("Unexpected error in retry mechanism")
 
         @wraps(func)
-        def sync_wrapper(*args, **kwargs) -> Any:
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
             last_exception: Optional[Exception] = None
 
             for attempt in range(max_attempts):

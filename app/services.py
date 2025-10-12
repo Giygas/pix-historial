@@ -1,15 +1,15 @@
 from datetime import datetime, timezone
 
 import requests
-from requests.exceptions import RequestException, Timeout, ConnectionError
+from requests.exceptions import ConnectionError, RequestException, Timeout
 
-from app.logger import logger
 from app.exceptions import (
     QuoteAPIConnectionError,
     QuoteAPITimeoutError,
     QuoteDataParsingError,
 )
-from app.utils import retry_with_backoff, RetryConfig
+from app.logger import logger
+from app.utils import RetryConfig, retry_with_backoff
 
 from .config import settings
 from .database import tracker
@@ -21,7 +21,11 @@ class QuoteService:
     @staticmethod
     @retry_with_backoff(
         exceptions=(Timeout, ConnectionError, RequestException),
-        **RetryConfig.NETWORK_RETRY,
+        max_attempts=int(RetryConfig.NETWORK_RETRY["max_attempts"]),
+        base_delay=RetryConfig.NETWORK_RETRY["base_delay"],
+        max_delay=RetryConfig.NETWORK_RETRY["max_delay"],
+        backoff_factor=RetryConfig.NETWORK_RETRY["backoff_factor"],
+        jitter=bool(RetryConfig.NETWORK_RETRY["jitter"]),
     )
     def _fetch_from_api() -> requests.Response:
         """Internal method to fetch data from API with retry logic."""
@@ -30,7 +34,14 @@ class QuoteService:
         return response
 
     @staticmethod
-    @retry_with_backoff(exceptions=(Exception,), **RetryConfig.DATABASE_RETRY)
+    @retry_with_backoff(
+        exceptions=(Exception,),
+        max_attempts=int(RetryConfig.DATABASE_RETRY["max_attempts"]),
+        base_delay=RetryConfig.DATABASE_RETRY["base_delay"],
+        max_delay=RetryConfig.DATABASE_RETRY["max_delay"],
+        backoff_factor=RetryConfig.DATABASE_RETRY["backoff_factor"],
+        jitter=bool(RetryConfig.DATABASE_RETRY["jitter"]),
+    )
     async def _save_to_database(data: dict) -> str:
         """Internal method to save data to database with retry logic."""
         return await tracker.save_snapshot(data)
@@ -54,7 +65,7 @@ class QuoteService:
             # Save to database with retry
             doc_id = await QuoteService._save_to_database(data)
             logger.info(f"Successfully saved quotes with ID: {doc_id}")
-            return doc_id
+            return str(doc_id)
 
         except Timeout:
             logger.error("API request timed out after 30 seconds")
@@ -76,9 +87,13 @@ class QuoteService:
 
 @retry_with_backoff(
     exceptions=(QuoteAPITimeoutError, QuoteAPIConnectionError, QuoteDataParsingError),
-    **RetryConfig.BACKGROUND_RETRY,
+    max_attempts=int(RetryConfig.BACKGROUND_RETRY["max_attempts"]),
+    base_delay=RetryConfig.BACKGROUND_RETRY["base_delay"],
+    max_delay=RetryConfig.BACKGROUND_RETRY["max_delay"],
+    backoff_factor=RetryConfig.BACKGROUND_RETRY["backoff_factor"],
+    jitter=bool(RetryConfig.BACKGROUND_RETRY["jitter"]),
 )
-async def collect_quotes_background():
+async def collect_quotes_background() -> None:
     """Background task to collect quotes periodically"""
     try:
         await QuoteService.fetch_and_save_quotes()
