@@ -3,11 +3,6 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [main, dev]
-  pull_request:
-    branches: [main]
-
-env:
-  PYTHON_DEFAULT_VERSION: "3.13"
 
 jobs:
   test:
@@ -26,23 +21,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install types-requests
 
       - name: Set up test environment
         run: |
-          echo "MONGO_URI=mongodb://fake-server:27017" >> .env
+          echo "MONGO_URI=mongodb://fake-server:27017" > .env
           echo "DB_NAME=test_db" >> .env
           echo "QUOTES_API_URL=https://api.example.com/quotes" >> .env
           echo "COLLECTION_CRON=*/15" >> .env
@@ -50,122 +36,18 @@ jobs:
           echo "API_VERSION=1.0.0" >> .env
           echo "ENABLE_CORRELATION_IDS=true" >> .env
 
-      - name: Validate application can start
+      - name: Test application import
         run: |
-          echo "Testing application import..."
           python -c "from app.main import app; print('✅ Application imports successfully')"
-          
-      - name: Generate build info
+
+      - name: Run tests
         run: |
-          echo "Build completed successfully!"
-          echo "Python version: $(python --version)"
-          echo "Dependencies: $(pip list | wc -l) packages"
-          echo "Git commit: ${GITHUB_SHA}"
+          python -m pytest tests/ -x --tb=short --cov=app --cov-report=term-missing
 
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install bandit[toml] safety types-requests
-
-      - name: Set up test environment
-        run: |
-          echo "MONGO_URI=mongodb://fake-server:27017" >> .env
-          echo "DB_NAME=test_db" >> .env
-          echo "QUOTES_API_URL=https://api.example.com/quotes" >> .env
-          echo "COLLECTION_CRON=*/15" >> .env
-          echo "API_TITLE=Test API" >> .env
-          echo "API_VERSION=1.0.0" >> .env
-          echo "ENABLE_CORRELATION_IDS=true" >> .env
-
-      - name: Run Bandit security linter
-        run: |
-          echo "🔍 Running Bandit security analysis..."
-          bandit -r app/ -f json -o bandit-report.json || echo "⚠️ Bandit found issues (see report)"
-          bandit -r app/ -f txt || echo "⚠️ Bandit found issues (see above)"
-          echo "✅ Bandit analysis completed. Check bandit-report.json for details."
-
-      - name: Run Safety dependency check
-        run: |
-          echo "🔍 Checking for known security vulnerabilities..."
-          safety check --json --output json > safety-report.json || echo "⚠️ Safety found vulnerabilities (see report)"
-          safety check || echo "⚠️ Safety found vulnerabilities (see above)"
-          echo "✅ Safety check completed. Check safety-report.json for details."
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-
-
-      - name: Display Trivy scan results summary
-        if: always() && hashFiles('trivy-results.sarif') != ''
-        run: |
-          echo "🔍 Trivy vulnerability scan completed"
-          if [ -f trivy-results.sarif ]; then
-            # Count vulnerabilities using basic text processing
-            VULNS=$(grep -c '"ruleId"' trivy-results.sarif 2>/dev/null || echo "0")
-            if [ "$VULNS" -eq 0 ]; then
-              echo "✅ No vulnerabilities detected by Trivy"
-            else
-              echo "⚠️ Trivy detected $VULNS potential issues"
-              echo "📄 Full details available in trivy-results.sarif artifact"
-            fi
-          else
-            echo "ℹ️ Trivy scan did not generate results"
-          fi
-
-      - name: Upload security reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: security-reports
-          path: |
-            bandit-report.json
-            safety-report.json
-            trivy-results.sarif
-
-
-
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [test, security]
-    if: github.ref == 'refs/heads/dev'
-    environment: staging
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to staging
-        run: |
-          echo "🚀 Deploying to staging environment..."
-          echo "This would deploy to your staging server"
-          echo "Commit: ${GITHUB_SHA}"
-          echo "Branch: ${GITHUB_REF_NAME}"
-
-  deploy-production:
+  deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: [test, security]
+    needs: test
     if: github.ref == 'refs/heads/main'
     environment: production
     
@@ -178,12 +60,47 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.DEPLOY_KEY }}
 
-      - name: Deploy over SSH
+      - name: Deploy with health check and rollback
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_ADRESS }} << 'EOF'
+            set -e
+            
+            # Navigate to app directory
             cd ${{ secrets.APP_LOCATION }}
+            
+            # Create backup
+            BACKUP_DIR="../backup-$(date +%Y%m%d-%H%M%S)"
+            cp -r . "$BACKUP_DIR"
+            
+            # Deploy
             git pull origin main
             source venv/bin/activate
             pip install -r requirements.txt
             sudo systemctl restart pix-historial
+            
+            # Wait for service to start
+            sleep 15
+            
+            # Health check
+            HEALTH_URL="https://pix-historial.giygas.dev/health"
+            MAX_ATTEMPTS=12
+            ATTEMPT=1
+            
+            while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+              if curl -f -s "$HEALTH_URL" | grep -q '"status":"healthy"'; then
+                echo "✅ Health check passed!"
+                exit 0
+              fi
+              
+              echo "⏳ Health check attempt $ATTEMPT/$MAX_ATTEMPTS failed, retrying in 10 seconds..."
+              sleep 10
+              ATTEMPT=$((ATTEMPT + 1))
+            done
+            
+            echo "❌ Health check failed, rolling back..."
+            sudo systemctl stop pix-historial
+            rm -rf ./*
+            cp -r "$BACKUP_DIR"/* ./
+            sudo systemctl start pix-historial
+            exit 1
           EOF

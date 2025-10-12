@@ -23,9 +23,10 @@ class TestQuoteTracker:
         """Create QuoteTracker instance with mocked dependencies"""
         with patch("app.database.settings"):
             tracker = QuoteTracker()
-            tracker.client = mock_client
-            tracker.db = Mock(spec=Database)
-            tracker.collection = Mock(spec=Collection)
+            # Set the private attributes to mock the lazy properties
+            tracker._client = mock_client
+            tracker._db = Mock(spec=Database)
+            tracker._collection = Mock(spec=Collection)
             return tracker
 
     def test_tracker_initialization(self, mock_client):
@@ -35,6 +36,9 @@ class TestQuoteTracker:
             mock_settings.DB_NAME = "test_db"
 
             tracker = QuoteTracker()
+
+            # Access client property to trigger lazy initialization
+            _ = tracker.client
 
             mock_client.assert_called_once_with("mongodb://localhost:27017")
             assert hasattr(tracker, "db")

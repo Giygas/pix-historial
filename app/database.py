@@ -12,11 +12,33 @@ from .models import ApiResponse, Exchange, HistoryElement, QuoteSnapshot
 
 class QuoteTracker:
     def __init__(self) -> None:
-        self.client: MongoClient = MongoClient(settings.MONGO_URI)
-        self.db: Database = self.client[settings.DB_NAME]
-        self.collection: Collection = self.db.snapshots
+        self._client: Optional[MongoClient] = None
+        self._db: Optional[Database] = None
+        self._collection: Optional[Collection] = None
+        self._indexes_created = False
 
-        self.createIndexes()
+    @property
+    def client(self) -> MongoClient:
+        if self._client is None:
+            self._client = MongoClient(settings.MONGO_URI)
+        return self._client
+
+    @property
+    def db(self) -> Database:
+        if self._db is None:
+            self._db = self.client[settings.DB_NAME]
+        return self._db
+
+    @property
+    def collection(self) -> Collection:
+        if self._collection is None:
+            self._collection = self.db.snapshots
+        return self._collection
+
+    def _ensure_indexes(self) -> None:
+        if not self._indexes_created:
+            self.createIndexes()
+            self._indexes_created = True
 
     def createIndexes(self) -> None:
         """Create indexes for faster query time"""
@@ -35,6 +57,8 @@ class QuoteTracker:
 
     async def save_snapshot(self, api_data: dict) -> str:
         """Parse API response and save grouped snapshot"""
+        self._ensure_indexes()
+
         # Parse and validate API response
         api_response = ApiResponse(api_data)
 
@@ -56,6 +80,7 @@ class QuoteTracker:
 
     async def get_latest_snapshot(self) -> Optional[QuoteSnapshot]:
         """Get the most recent snapshot"""
+        self._ensure_indexes()
         doc = self.collection.find_one(sort=[("timestamp", DESCENDING)])
         if doc:
             doc.pop("_id", None)
@@ -64,6 +89,7 @@ class QuoteTracker:
 
     async def get_snapshots_since(self, since: datetime) -> List[QuoteSnapshot]:
         """Get validated snapshots since a given time"""
+        self._ensure_indexes()
         docs = list(
             self.collection.find(
                 {"timestamp": {"$gte": since}},
@@ -78,6 +104,7 @@ class QuoteTracker:
 
     async def get_app_history(self, app_name: str, hours: int) -> List[HistoryElement]:
         """Get rate history for a specific app"""
+        self._ensure_indexes()
         since = datetime.now(timezone.utc) - timedelta(hours=hours)
         snapshots = await self.get_snapshots_since(since)
 
