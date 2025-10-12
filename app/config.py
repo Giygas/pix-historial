@@ -1,6 +1,5 @@
 from pydantic import Field
-from pydantic_settings import BaseSettings
-from pydantic_settings import SettingsConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -15,6 +14,10 @@ class Settings(BaseSettings):
     MAX_HOURS: int = Field(default=720)
     API_TITLE: str = "PIX Historial API"
     API_VERSION: str = "1.0.0"
+
+    # Rate limiting settings
+    RATE_LIMIT_REQUESTS: int = Field(default=100)  # Number of requests
+    RATE_LIMIT_WINDOW: int = Field(default=60)  # Time window in seconds
 
 
 settings = Settings()  # type: ignore[call-arg]
