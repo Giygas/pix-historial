@@ -1,10 +1,10 @@
 import pytest
 from datetime import datetime, timezone, timedelta
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.models import QuoteSnapshot, AppRate, HistoryElement
+from app.models import QuoteSnapshot
 
 
 class TestAPIEndpointsSimple:

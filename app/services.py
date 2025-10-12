@@ -7,7 +7,6 @@ from app.logger import logger
 from app.exceptions import (
     QuoteAPIConnectionError,
     QuoteAPITimeoutError,
-    QuoteDatabaseError,
     QuoteDataParsingError,
 )
 from app.utils import retry_with_backoff, RetryConfig
@@ -58,7 +57,7 @@ class QuoteService:
             return doc_id
 
         except Timeout:
-            logger.error(f"API request timed out after 30 seconds")
+            logger.error("API request timed out after 30 seconds")
             raise QuoteAPITimeoutError("API request timed out", timeout=30)
         except ConnectionError as e:
             logger.error(f"Failed to connect to API: {e}")

@@ -12,3 +12,4 @@ ai/
 AGENTS.md
 .coverage
 .DS_Store
+extras/

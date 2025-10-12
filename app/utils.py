@@ -3,7 +3,7 @@
 import asyncio
 import time
 from functools import wraps
-from typing import Callable, Optional, Tuple, Type, Any, Union
+from typing import Callable, Optional, Tuple, Type, Any
 
 from app.logger import logger
 

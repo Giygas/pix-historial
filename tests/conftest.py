@@ -1,13 +1,11 @@
 import pytest
 import asyncio
 from datetime import datetime, timezone, timedelta
-from typing import AsyncGenerator, Dict, Any
 from unittest.mock import Mock, AsyncMock, patch
 from pymongo import MongoClient
-from pymongo.database import Database
 
 from app.database import QuoteTracker
-from app.models import QuoteSnapshot, ApiResponse, Exchange, Quote
+from app.models import QuoteSnapshot
 
 
 @pytest.fixture
@@ -80,7 +78,7 @@ def tracker_instance():
     with patch("app.database.settings") as mock_settings:
         mock_settings.MONGO_URI = "mongodb://localhost:27017"
         mock_settings.DB_NAME = "test_db"
-        with patch("pymongo.MongoClient") as mock_client:
+        with patch("pymongo.MongoClient"):
             with patch.object(QuoteTracker, "createIndexes"):
                 tracker = QuoteTracker()
                 yield tracker

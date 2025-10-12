@@ -1,11 +1,11 @@
 import pytest
 from datetime import datetime, timezone, timedelta
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import Mock, AsyncMock, patch
 from pymongo.collection import Collection
 from pymongo.database import Database
 
 from app.database import QuoteTracker
-from app.models import QuoteSnapshot, ApiResponse, Exchange, Quote
+from app.models import QuoteSnapshot, Exchange, Quote
 
 
 class TestQuoteTracker:
