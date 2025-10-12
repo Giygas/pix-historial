@@ -1,6 +1,6 @@
 import time
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.collection import Collection
@@ -115,7 +115,7 @@ def get_tracker() -> QuoteTracker:
 class _TrackerProxy:
     """Proxy for lazy tracker initialization"""
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         return getattr(get_tracker(), name)
 
 

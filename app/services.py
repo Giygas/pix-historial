@@ -13,6 +13,7 @@ from app.utils import RetryConfig, retry_with_backoff
 
 from .config import settings
 from .database import tracker
+from typing import Any
 
 
 class QuoteService:
@@ -44,7 +45,8 @@ class QuoteService:
     )
     async def _save_to_database(data: dict) -> str:
         """Internal method to save data to database with retry logic."""
-        return await tracker.save_snapshot(data)
+        result: Any = await tracker.save_snapshot(data)
+        return str(result)
 
     @staticmethod
     async def fetch_and_save_quotes() -> str:
