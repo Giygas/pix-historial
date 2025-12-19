@@ -12,18 +12,17 @@ class TestQuoteService:
 
     @pytest.mark.asyncio
     async def test_fetch_and_save_quotes_success(self, mock_requests):
-        """Test successful quote fetching and saving"""
+        """Test successful quote fetching and saving with USD support"""
         with patch("app.services.tracker") as mock_tracker:
             with patch("app.services.settings") as mock_settings:
                 mock_settings.QUOTES_API_URL = "https://test-api.com/quotes"
                 mock_tracker.save_snapshot = AsyncMock(
-                    return_value="507f1f77bcf86cd799439011"
+                    return_value="Saved: brlars=2 apps, usd=1 apps"
                 )
 
-                doc_id = await QuoteService.fetch_and_save_quotes()
+                result = await QuoteService.fetch_and_save_quotes()
 
-                assert doc_id == "507f1f77bcf86cd799439011"
-                mock_requests.get.assert_called_once()
+                assert result == "Saved: brlars=2 apps, usd=1 apps"
                 mock_tracker.save_snapshot.assert_called_once()
 
                 # Verify the API was called with correct parameters

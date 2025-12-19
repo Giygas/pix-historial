@@ -17,7 +17,7 @@ def mock_mongo_client():
 
 @pytest.fixture
 def sample_api_response():
-    """Sample API response data for testing"""
+    """Sample API response data for testing with both BRLARS and USD"""
     return {
         "app1": {
             "quotes": [
@@ -27,7 +27,14 @@ def sample_api_response():
                     "sell": 1860.0,
                     "spread": 9.5,
                     "spread_pct": 0.51,
-                }
+                },
+                {
+                    "symbol": "BRLUSD",
+                    "buy": 0.186,
+                    "sell": 0.188,
+                    "spread": 0.002,
+                    "spread_pct": 1.07,
+                },
             ],
             "logo": "https://example.com/logo1.png",
             "url": "https://app1.com",
@@ -42,10 +49,32 @@ def sample_api_response():
                     "sell": 1862.5,
                     "spread": 10.5,
                     "spread_pct": 0.57,
-                }
+                },
+                {
+                    "symbol": "BRLUSDT",
+                    "buy": 0.1855,
+                    "sell": 0.1875,
+                    "spread": 0.002,
+                    "spread_pct": 1.07,
+                },
             ],
             "logo": "https://example.com/logo2.png",
             "url": "https://app2.com",
+            "isPix": False,
+            "hasFees": True,
+        },
+        "app3": {
+            "quotes": [
+                {
+                    "symbol": "BRLARS",
+                    "buy": 1848.0,
+                    "sell": 1858.5,
+                    "spread": 10.5,
+                    "spread_pct": 0.57,
+                }
+            ],
+            "logo": "https://example.com/logo3.png",
+            "url": "https://app3.com",
             "isPix": False,
             "hasFees": True,
         },
@@ -130,3 +159,39 @@ def sample_history_data():
         {"timestamp": now - timedelta(hours=1), "rate": 1848.75},
         {"timestamp": now, "rate": 1851.25},
     ]
+
+
+@pytest.fixture
+def api_response_brlusd_priority():
+    """API response with both BRLUSD and BRLUSDT to test priority"""
+    return {
+        "priority_test_app": {
+            "quotes": [
+                {
+                    "symbol": "BRLUSDT",  # First but should be ignored
+                    "buy": 0.1855,
+                    "sell": 0.1875,
+                    "spread": 0.002,
+                    "spread_pct": 1.07,
+                },
+                {
+                    "symbol": "BRLARS",
+                    "buy": 1850.5,
+                    "sell": 1860.0,
+                    "spread": 9.5,
+                    "spread_pct": 0.51,
+                },
+                {
+                    "symbol": "BRLUSD",  # Second but should be chosen
+                    "buy": 0.186,
+                    "sell": 0.188,
+                    "spread": 0.002,
+                    "spread_pct": 1.07,
+                },
+            ],
+            "logo": "https://example.com/priority.png",
+            "url": "https://priority.com",
+            "isPix": True,
+            "hasFees": False,
+        }
+    }

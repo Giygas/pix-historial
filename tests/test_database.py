@@ -23,10 +23,11 @@ class TestQuoteTracker:
         """Create QuoteTracker instance with mocked dependencies"""
         with patch("app.database.settings"):
             tracker = QuoteTracker()
-            # Set the private attributes to mock the lazy properties
+            # Set private attributes to mock lazy properties
             tracker._client = mock_client
             tracker._db = Mock(spec=Database)
             tracker._collection = Mock(spec=Collection)
+            tracker._usd_collection = Mock(spec=Collection)  # Add USD collection mock
             return tracker
 
     def test_tracker_initialization(self, mock_client):
@@ -47,13 +48,25 @@ class TestQuoteTracker:
     def test_create_indexes(self, tracker_instance):
         """Test index creation"""
         tracker_instance.collection.create_index = Mock()
+        tracker_instance.usd_collection.create_index = Mock()
 
         tracker_instance.createIndexes()
 
-        # Verify indexes were created
+        # Verify indexes were created for both collections
         assert tracker_instance.collection.create_index.call_count == 2
+        assert tracker_instance.usd_collection.create_index.call_count == 2
+
+        # Verify BRLARS collection indexes
         tracker_instance.collection.create_index.assert_any_call([("timestamp", -1)])
         tracker_instance.collection.create_index.assert_any_call(
+            [("timestamp", -1), ("quotes", 1)]
+        )
+
+        # Verify USD collection indexes
+        tracker_instance.usd_collection.create_index.assert_any_call(
+            [("timestamp", -1)]
+        )
+        tracker_instance.usd_collection.create_index.assert_any_call(
             [("timestamp", -1), ("quotes", 1)]
         )
 
@@ -92,23 +105,45 @@ class TestQuoteTracker:
 
     @pytest.mark.asyncio
     async def test_save_snapshot_success(self, tracker_instance, sample_api_response):
-        """Test successful snapshot saving"""
-        # Mock the insert_one result
+        """Test successful snapshot saving with USD data"""
+        # Mock insert_one results for both collections
         mock_result = Mock()
         mock_result.inserted_id = "507f1f77bcf86cd799439011"
         tracker_instance.collection.insert_one = Mock(return_value=mock_result)
 
-        doc_id = await tracker_instance.save_snapshot(sample_api_response)
+        mock_usd_result = Mock()
+        mock_usd_result.inserted_id = "507f1f77bcf86cd799439012"
+        tracker_instance.usd_collection.insert_one = Mock(return_value=mock_usd_result)
 
-        assert doc_id == "507f1f77bcf86cd799439011"
+        result = await tracker_instance.save_snapshot(sample_api_response)
+
+        # Check return format - app1 has BRLUSD, app2 has BRLUSDT, app3 has no USD
+        assert "brlars=3 apps" in result
+        assert "usd=2 apps" in result
+
+        # Verify both collections were called
         tracker_instance.collection.insert_one.assert_called_once()
+        tracker_instance.usd_collection.insert_one.assert_called_once()
 
-        # Verify the data structure
-        call_args = tracker_instance.collection.insert_one.call_args[0][0]
-        assert "quotes" in call_args
-        assert "timestamp" in call_args
-        assert isinstance(call_args["quotes"], dict)
-        assert len(call_args["quotes"]) == 2  # app1 and app2
+        # Verify BRLARS data structure
+        brlars_call_args = tracker_instance.collection.insert_one.call_args[0][0]
+        assert "quotes" in brlars_call_args
+        assert "timestamp" in brlars_call_args
+        assert isinstance(brlars_call_args["quotes"], dict)
+        assert len(brlars_call_args["quotes"]) == 3  # app1, app2, app3
+
+        # Verify USD data structure
+        usd_call_args = tracker_instance.usd_collection.insert_one.call_args[0][0]
+        assert "quotes" in usd_call_args
+        assert "timestamp" in usd_call_args
+        assert isinstance(usd_call_args["quotes"], dict)
+        assert len(usd_call_args["quotes"]) == 2  # app1, app2
+
+        # Verify specific USD rates (BRLUSD preference)
+        usd_quotes = usd_call_args["quotes"]
+        assert usd_quotes["app1"] == 0.186  # BRLUSD rate
+        assert usd_quotes["app2"] == 0.1855  # BRLUSDT rate
+        assert "app3" not in usd_quotes  # No USD data
 
     @pytest.mark.asyncio
     async def test_save_snapshot_no_brlars_quotes(self, tracker_instance):
@@ -124,6 +159,135 @@ class TestQuoteTracker:
 
         with pytest.raises(ValueError, match="No BRLARS quotes found"):
             await tracker_instance.save_snapshot(api_data)
+
+    @pytest.mark.asyncio
+    async def test_save_snapshot_brlars_only(self, tracker_instance):
+        """Test saving snapshot with only BRLARS data (no USD)"""
+        api_data = {
+            "app1": {
+                "quotes": [{"symbol": "BRLARS", "buy": 1850.5}],
+                "logo": "https://example.com/logo.png",
+                "url": "https://example.com",
+                "isPix": True,
+            }
+        }
+
+        # Mock BRLARS insert
+        mock_result = Mock()
+        mock_result.inserted_id = "507f1f77bcf86cd799439011"
+        tracker_instance.collection.insert_one = Mock(return_value=mock_result)
+        tracker_instance.usd_collection.insert_one = Mock()
+
+        result = await tracker_instance.save_snapshot(api_data)
+
+        assert "brlars=1 apps" in result
+        assert "usd=0 apps" in result
+        tracker_instance.collection.insert_one.assert_called_once()
+        tracker_instance.usd_collection.insert_one.assert_not_called()
+
+    def test_extract_brlusd_rate_priority_test(self, tracker_instance):
+        """Test that BRLUSD is preferred over BRLUSDT when both present"""
+        # BRLUSDT comes first in the array, but BRLUSD should be chosen
+        from app.models import Exchange, Quote
+
+        exchange = Exchange(
+            quotes=[
+                Quote(symbol="BRLUSDT", buy=0.1855),
+                Quote(symbol="BRLARS", buy=1850.5),
+                Quote(symbol="BRLUSD", buy=0.186),  # This should be chosen
+            ],
+            logo="https://example.com/logo.png",
+            url="https://example.com",
+            isPix=True,
+        )
+
+        rate = tracker_instance.extract_brlusd_rate(exchange)
+        assert rate == 0.186  # Should return BRLUSD, not BRLUSDT
+
+    @pytest.mark.asyncio
+    async def test_save_snapshot_usd_only(self, tracker_instance):
+        """Test saving snapshot with only USD data (no BRLARS)"""
+        api_data = {
+            "app1": {
+                "quotes": [{"symbol": "BRLUSD", "buy": 0.186}],
+                "logo": "https://example.com/logo.png",
+                "url": "https://example.com",
+                "isPix": True,
+            }
+        }
+
+        with pytest.raises(ValueError, match="No BRLARS quotes found"):
+            await tracker_instance.save_snapshot(api_data)
+
+    @pytest.mark.asyncio
+    async def test_extract_brlusd_rate_found(self, tracker_instance):
+        """Test extracting USD rate when found"""
+        from app.models import Exchange, Quote
+
+        exchange = Exchange(
+            quotes=[
+                Quote(symbol="BRLARS", buy=1850.5),
+                Quote(symbol="BRLUSD", buy=0.186),
+                Quote(symbol="USDARS", buy=365.5),
+            ],
+            logo="https://example.com/logo.png",
+            url="https://example.com",
+            isPix=True,
+        )
+
+        rate = tracker_instance.extract_brlusd_rate(exchange)
+        assert rate == 0.186
+
+    def test_extract_brlusd_rate_not_found(self, tracker_instance):
+        """Test extracting USD rate when not found"""
+        from app.models import Exchange, Quote
+
+        exchange = Exchange(
+            quotes=[
+                Quote(symbol="BRLARS", buy=1850.5),
+                Quote(symbol="USDARS", buy=365.5),
+            ],
+            logo="https://example.com/logo.png",
+            url="https://example.com",
+            isPix=True,
+        )
+
+        rate = tracker_instance.extract_brlusd_rate(exchange)
+        assert rate is None
+
+    def test_extract_brlusd_rate_only_brlusdt(self, tracker_instance):
+        """Test extracting BRLUSDT when no BRLUSD available"""
+        from app.models import Exchange, Quote
+
+        exchange = Exchange(
+            quotes=[
+                Quote(symbol="BRLARS", buy=1850.5),
+                Quote(symbol="BRLUSDT", buy=0.1855),  # Should be chosen
+            ],
+            logo="https://example.com/logo.png",
+            url="https://example.com",
+            isPix=True,
+        )
+
+        rate = tracker_instance.extract_brlusd_rate(exchange)
+        assert rate == 0.1855
+
+    def test_extract_brlusd_rate_only_brlusd(self, tracker_instance):
+        """Test extracting BRLUSD when only BRLUSD available"""
+        from app.models import Exchange, Quote
+
+        exchange = Exchange(
+            quotes=[
+                Quote(symbol="BRLARS", buy=1850.5),
+                Quote(symbol="BRLUSD", buy=0.186),  # Should be chosen
+            ],
+            logo="https://example.com/logo.png",
+            url="https://example.com",
+            isPix=True,
+        )
+
+        rate = tracker_instance.extract_brlusd_rate(exchange)
+        assert rate == 0.186
 
     @pytest.mark.asyncio
     async def test_get_latest_snapshot_found(
@@ -261,30 +425,51 @@ class TestQuoteTrackerIntegration:
     @pytest.mark.asyncio
     async def test_full_workflow(self, tracker_instance, sample_api_response):
         """Test full workflow: save -> retrieve latest -> get history"""
-        # Setup mocks
+        # Setup mocks for both collections
         mock_result = Mock()
         mock_result.inserted_id = "507f1f77bcf86cd799439011"
         tracker_instance.collection.insert_one = Mock(return_value=mock_result)
 
-        mock_doc = {
+        mock_usd_result = Mock()
+        mock_usd_result.inserted_id = "507f1f77bcf86cd799439012"
+        tracker_instance.usd_collection.insert_one = Mock(return_value=mock_usd_result)
+
+        # Mock database responses
+        mock_brlars_doc = {
             "_id": "507f1f77bcf86cd799439011",
             "timestamp": datetime.now(timezone.utc),
-            "quotes": {"app1": 1850.5, "app2": 1852.0},
+            "quotes": {"app1": 1850.5, "app2": 1852.0, "app3": 1848.0},
         }
-        tracker_instance.collection.find_one = Mock(return_value=mock_doc)
+        tracker_instance.collection.find_one = Mock(return_value=mock_brlars_doc)
+
+        mock_usd_doc = {
+            "_id": "507f1f77bcf86cd799439012",
+            "timestamp": datetime.now(timezone.utc),
+            "quotes": {"app1": 0.186, "app2": 0.1855},
+        }
+        tracker_instance.usd_collection.find_one = Mock(return_value=mock_usd_doc)
 
         # Test save
-        doc_id = await tracker_instance.save_snapshot(sample_api_response)
-        assert doc_id == "507f1f77bcf86cd799439011"
+        result = await tracker_instance.save_snapshot(sample_api_response)
+        assert "brlars=3 apps" in result
+        assert "usd=2 apps" in result
 
-        # Test get latest
-        latest = await tracker_instance.get_latest_snapshot()
-        assert latest is not None
-        assert "app1" in latest.quotes
-        assert "app2" in latest.quotes
+        # Test get latest BRLARS
+        latest_brlars = await tracker_instance.get_latest_snapshot()
+        assert latest_brlars is not None
+        assert "app1" in latest_brlars.quotes
+        assert "app2" in latest_brlars.quotes
+        assert "app3" in latest_brlars.quotes
+
+        # Test get latest USD
+        latest_usd = await tracker_instance.get_latest_snapshot(is_usd=True)
+        assert latest_usd is not None
+        assert "app1" in latest_usd.quotes
+        assert "app2" in latest_usd.quotes
+        assert "app3" not in latest_usd.quotes  # app3 has no USD
 
         # Test get history
-        tracker_instance.get_snapshots_since = AsyncMock(return_value=[latest])
+        tracker_instance.get_snapshots_since = AsyncMock(return_value=[latest_brlars])
         history = await tracker_instance.get_app_history("app1", 24)
         assert len(history) == 1
         assert history[0].rate == 1850.5

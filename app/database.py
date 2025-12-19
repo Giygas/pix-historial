@@ -15,6 +15,7 @@ class QuoteTracker:
         self._client: Optional[MongoClient] = None
         self._db: Optional[Database] = None
         self._collection: Optional[Collection] = None
+        self._usd_collection: Optional[Collection] = None
         self._indexes_created = False
 
     @property
@@ -35,6 +36,12 @@ class QuoteTracker:
             self._collection = self.db.snapshots
         return self._collection
 
+    @property
+    def usd_collection(self) -> Collection:
+        if self._usd_collection is None:
+            self._usd_collection = self.db.usd_snapshots
+        return self._usd_collection
+
     def _ensure_indexes(self) -> None:
         if not self._indexes_created:
             self.createIndexes()
@@ -44,9 +51,13 @@ class QuoteTracker:
         """Create indexes for faster query time"""
         # Index for time-based queries
         self.collection.create_index([("timestamp", DESCENDING)])
+        self.usd_collection.create_index([("timestamp", DESCENDING)])
 
         # Compound index for app-specific queries
         self.collection.create_index([("timestamp", DESCENDING), ("quotes", ASCENDING)])
+        self.usd_collection.create_index(
+            [("timestamp", DESCENDING), ("quotes", ASCENDING)]
+        )
 
     def extract_brlars_rate(self, exchange: Exchange) -> Optional[float]:
         """Extract BRLARS rate from exchange quotes"""
@@ -54,6 +65,18 @@ class QuoteTracker:
             if quote.symbol == "BRLARS":
                 return quote.buy
         return None
+
+    def extract_brlusd_rate(self, exchange: Exchange) -> Optional[float]:
+        """Extract USD rate from exchange quotes, preferring BRLUSD over BRLUSDT"""
+        brlusd_rate = None
+        for quote in exchange.quotes:
+            if quote.symbol == "BRLUSD":
+                return quote.buy  # Immediate return for preferred symbol
+            elif quote.symbol == "BRLUSDT" and brlusd_rate is None:
+                brlusd_rate = (
+                    quote.buy
+                )  # Store fallback, but continue searching for BRLUSD
+        return brlusd_rate  # Return fallback if no BRLUSD found
 
     async def save_snapshot(self, api_data: dict) -> str:
         """Parse API response and save grouped snapshot"""
@@ -64,49 +87,81 @@ class QuoteTracker:
 
         # Extract BRLARS rates
         quotes = {}
+        usd_quotes = {}
         for app_name, exchange in api_response.items():
             brlars_rate = self.extract_brlars_rate(exchange)
             if brlars_rate:
                 quotes[app_name] = brlars_rate
 
+            brlusd_rate = self.extract_brlusd_rate(exchange)
+            if brlusd_rate:
+                usd_quotes[app_name] = brlusd_rate
+
+        # Validate we have at least some data
         if not quotes:
             raise ValueError("No BRLARS quotes found in API response")
 
-        # Create and save validated snapshot
-        snapshot = QuoteSnapshot(quotes=quotes)
-        result = self.collection.insert_one(snapshot.model_dump())
+        # Create and save validated ars snapshot
+        if quotes:
+            snapshot = QuoteSnapshot(quotes=quotes)
+            self.collection.insert_one(snapshot.model_dump())
 
-        return str(result.inserted_id)
+        # Create and save validated usd snapshot
+        if usd_quotes:
+            usd_snapshot = QuoteSnapshot(quotes=usd_quotes)
+            self.usd_collection.insert_one(usd_snapshot.model_dump())
 
-    async def get_latest_snapshot(self) -> Optional[QuoteSnapshot]:
+        return f"Saved: brlars={len(quotes)} apps, usd={len(usd_quotes)} apps"
+
+    async def get_latest_snapshot(
+        self, is_usd: bool = False
+    ) -> Optional[QuoteSnapshot]:
         """Get the most recent snapshot"""
         self._ensure_indexes()
-        doc = self.collection.find_one(sort=[("timestamp", DESCENDING)])
+
+        if is_usd:
+            doc = self.usd_collection.find_one(sort=[("timestamp", DESCENDING)])
+        else:
+            doc = self.collection.find_one(sort=[("timestamp", DESCENDING)])
+
         if doc:
             doc.pop("_id", None)
             return QuoteSnapshot(**doc)
         return None
 
-    async def get_snapshots_since(self, since: datetime) -> List[QuoteSnapshot]:
+    async def get_snapshots_since(
+        self, since: datetime, is_usd: bool = False
+    ) -> List[QuoteSnapshot]:
         """Get validated snapshots since a given time"""
         self._ensure_indexes()
-        docs = list(
-            self.collection.find(
-                {"timestamp": {"$gte": since}},
-                sort=[("timestamp", DESCENDING)],
+
+        if is_usd:
+            docs = list(
+                self.usd_collection.find(
+                    {"timestamp": {"$gte": since}},
+                    sort=[("timestamp", DESCENDING)],
+                )
             )
-        )
+        else:
+            docs = list(
+                self.collection.find(
+                    {"timestamp": {"$gte": since}},
+                    sort=[("timestamp", DESCENDING)],
+                )
+            )
 
         return [
             QuoteSnapshot(**{k: v for k, v in doc.items() if k != "_id"})
             for doc in docs
         ]
 
-    async def get_app_history(self, app_name: str, hours: int) -> List[HistoryElement]:
+    async def get_app_history(
+        self, app_name: str, hours: int, is_usd: bool = False
+    ) -> List[HistoryElement]:
         """Get rate history for a specific app"""
         self._ensure_indexes()
         since = datetime.now(timezone.utc) - timedelta(hours=hours)
-        snapshots = await self.get_snapshots_since(since)
+        snapshots = await self.get_snapshots_since(since, is_usd)
 
         history = []
         for snapshot in snapshots:
